@@ -1,0 +1,37 @@
+{
+  "name": "whatsapp-ai-sdk",
+  "version": "0.1.1",
+  "description": "Unofficial WhatsApp Web browser-extension SDK with message extraction, composer automation, and optional AI-assisted replies",
+  "type": "module",
+  "scripts": {
+    "dev": "rollup -c --watch",
+    "build": "rollup -c",
+    "smoke": "node scripts/smoke.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "verify": "npm run build && npm run check:secrets && npm run smoke"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "rollup": "^4.0.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@wppconnect/wa-js": "^4.3.1"
+  },
+  "keywords": [
+    "whatsapp-web",
+    "chrome-extension",
+    "browser-sdk",
+    "ai-assistant",
+    "wppconnect"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daoer-bot/whatsapp-ai-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/daoer-bot/whatsapp-ai-sdk/issues"
+  },
+  "homepage": "https://github.com/daoer-bot/whatsapp-ai-sdk"
+}

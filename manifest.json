@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "WhatsApp AI SDK",
+  "version": "0.1.1",
+  "description": "非官方 WhatsApp Web 数据访问与可选 AI 辅助回复 SDK",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://web.whatsapp.com/*"
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.whatsapp.com/*"
+      ],
+      "run_at": "document_start",
+      "js": [
+        "dist/content.js"
+      ],
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "dist/inject.js",
+        "dist/bridge.js",
+        "dist/wpp.js"
+      ],
+      "matches": [
+        "https://web.whatsapp.com/*"
+      ]
+    }
+  ]
+}

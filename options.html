@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp AI SDK 设置</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #f5f7fb;
+        color: #1f2937;
+      }
+      .page {
+        max-width: 760px;
+        margin: 32px auto;
+        padding: 0 20px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+      }
+      p {
+        margin: 0 0 20px;
+        line-height: 1.6;
+        color: #4b5563;
+      }
+      .field {
+        margin-bottom: 18px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: #fff;
+      }
+      textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      button {
+        border: 0;
+        border-radius: 10px;
+        background: #2563eb;
+        color: #fff;
+        padding: 10px 18px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      #status {
+        font-size: 14px;
+        color: #047857;
+      }
+      .hint {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="card">
+        <h1>AI 设置</h1>
+        <p>配置 Dify Chat 接口后，WhatsApp Web 中的 AI 按钮会使用这里的参数生成回复。</p>
+
+        <form id="config-form">
+          <div class="field">
+            <label for="provider">Provider</label>
+            <select id="provider" name="provider">
+              <option value="dify">dify</option>
+              <option value="mock">mock</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="baseUrl">Dify URL</label>
+            <input id="baseUrl" name="baseUrl" type="url" placeholder="https://ai.example.com/v1/chat-messages" />
+            <div class="hint">建议填写完整接口地址；如果你的网关不是默认 chat-messages，可直接在这里改。</div>
+          </div>
+
+          <div class="field">
+            <label for="apiKey">API Key</label>
+            <input id="apiKey" name="apiKey" type="password" placeholder="app-xxxx" />
+          </div>
+
+          <div class="field">
+            <label for="prompt">System Prompt（帮我回复）</label>
+            <textarea id="prompt" name="prompt"></textarea>
+            <div class="hint">输入框为空时使用：根据聊天历史生成回复。</div>
+          </div>
+
+          <div class="field">
+            <label for="polishPrompt">Polish Prompt（帮我优化）</label>
+            <textarea id="polishPrompt" name="polishPrompt"></textarea>
+            <div class="hint">输入框已有内容时使用：润色当前草稿。留空则回退到上面的 System Prompt。</div>
+          </div>
+
+          <div class="actions">
+            <button type="submit">保存配置</button>
+            <span id="status"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="dist/options.js"></script>
+  </body>
+</html>

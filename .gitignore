@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# build output (reload extension from project root; rebuild before load)
+# keep dist tracked only if you deliberately ship prebuilt assets —
+# default: ignore local build artifacts and regenerate via npm run build
+dist/
+
+# logs & caches
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor / agent
+.zcode/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# env / secrets (if ever added)
+.env
+.env.*
+!.env.example
