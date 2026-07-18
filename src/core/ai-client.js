@@ -17,6 +17,7 @@
  */
 
 import { buildChatContext, buildPromptText, buildPolishPromptText } from './prompt-builder.js';
+import { debugLog } from './logger.js';
 
 function lastCustomerMessage(messages = []) {
   const reversed = [...messages].reverse();
@@ -251,7 +252,7 @@ async function createDifyResponse({ chat, messages, config, responseMode, meId, 
   const timeout = timeoutMs
     || (responseMode === 'streaming' ? 120000 : 90000);
 
-  console.log('[AI] Dify request start:', {
+  debugLog('[AI] Dify request start:', {
     baseUrl,
     responseMode,
     mode: mode || 'ask',
@@ -293,7 +294,7 @@ async function createDifyResponse({ chat, messages, config, responseMode, meId, 
     );
   }
 
-  console.log('[AI] Dify response headers ok in', Date.now() - startedAt, 'ms');
+  debugLog('[AI] Dify response headers ok in', Date.now() - startedAt, 'ms');
   return response;
 }
 
@@ -348,7 +349,7 @@ async function requestDify({ chat, messages, config, meId, mode, draft }) {
 
   const data = await response.json();
   const text = extractDifyText(data);
-  console.log('[AI] Dify blocking done in', Date.now() - startedAt, 'ms, answerChars=', String(text || '').length);
+  debugLog('[AI] Dify blocking done in', Date.now() - startedAt, 'ms, answerChars=', String(text || '').length);
   return parseAiAnswer(text);
 }
 
@@ -420,7 +421,7 @@ async function requestDifyStream({ chat, messages, config, onChunk, meId, mode, 
     }
   }
 
-  console.log(
+  debugLog(
     '[AI] Dify stream done in',
     Date.now() - startedAt,
     'ms, chunks=',

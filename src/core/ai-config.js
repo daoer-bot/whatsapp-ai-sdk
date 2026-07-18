@@ -12,6 +12,8 @@ const DEFAULT_CONFIG = {
   prompt: 'You are a professional sales assistant. Generate a concise and natural reply in the same language as the customer message.',
   // 润色模式专用 system prompt；为空时回退到 prompt
   polishPrompt: 'You are a professional writing assistant. Polish the user draft so it is clearer, more natural, and more professional, while keeping the original intent and language.',
+  // 默认关闭调试日志，避免聊天内容出现在浏览器控制台。
+  debug: false,
 };
 
 function getStorageArea() {

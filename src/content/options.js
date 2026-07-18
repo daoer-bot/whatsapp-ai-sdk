@@ -20,6 +20,9 @@ function fillForm(config) {
   if (form.polishPrompt) {
     form.polishPrompt.value = config.polishPrompt || '';
   }
+  if (form.debug) {
+    form.debug.checked = config.debug === true;
+  }
 }
 
 async function init() {
@@ -43,6 +46,7 @@ form.addEventListener('submit', async (event) => {
       apiKey: form.apiKey.value.trim(),
       prompt: form.prompt.value.trim(),
       polishPrompt: form.polishPrompt ? form.polishPrompt.value.trim() : '',
+      debug: form.debug ? form.debug.checked : false,
     });
     setStatus('配置已保存');
   } catch (error) {

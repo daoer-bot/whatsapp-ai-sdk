@@ -57,6 +57,14 @@
         min-height: 100px;
         resize: vertical;
       }
+      .checkbox-field label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .checkbox-field input {
+        width: auto;
+      }
       .actions {
         display: flex;
         align-items: center;
@@ -118,6 +126,14 @@
             <label for="polishPrompt">Polish Prompt（帮我优化）</label>
             <textarea id="polishPrompt" name="polishPrompt"></textarea>
             <div class="hint">输入框已有内容时使用：润色当前草稿。留空则回退到上面的 System Prompt。</div>
+          </div>
+
+          <div class="field checkbox-field">
+            <label>
+              <input id="debug" name="debug" type="checkbox" />
+              开启调试日志
+            </label>
+            <div class="hint">仅在排查问题时开启；日志可能包含消息摘要，不建议长期启用。</div>
           </div>
 
           <div class="actions">

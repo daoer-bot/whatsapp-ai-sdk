@@ -14,6 +14,7 @@
  */
 
 import { createRpc } from '../core/rpc.js';
+import { debugLog } from '../core/logger.js';
 import {
   getMessagesByReact,
   getSnsInfoByReact,
@@ -26,6 +27,7 @@ import {
 import {
   getAudioBlobUrl,
   getMeId,
+  revokeAudioBlobUrl,
   getMessages,
   getSendTimestamp,
   getSnsInfo,
@@ -150,7 +152,7 @@ async function ensureWppReady(timeout = 30000) {
     }
 
     wppState = { ready: true, error: '' };
-    console.log('[inject] WPP usable:', {
+    debugLog('[inject] WPP usable:', {
       isReady: window.WPP.isReady,
       isFullReady: window.WPP.isFullReady,
       eventResolved,
@@ -262,7 +264,7 @@ export async function loadMoreMessages(count, options = {}) {
   // 已够条数时：WPP 读的是 _models，不依赖可视区渲染，直接跳过滚顶/滚底
   // 这能省掉 2~5s 的无意义等待（AI 路径默认走这里）
   if (!forceScroll && already >= count) {
-    console.log(`[inject] loadMoreMessages: skip scroll, already ${already} >= ${count}`);
+    debugLog(`[inject] loadMoreMessages: skip scroll, already ${already} >= ${count}`);
     return { loaded: already, scrolled: false, skipped: true };
   }
 
@@ -308,7 +310,7 @@ export async function loadMoreMessages(count, options = {}) {
     await new Promise((r) => setTimeout(r, 80));
   }
 
-  console.log(
+  debugLog(
     `[inject] loadMoreMessages: 已加载 ${countLoadedMessages()} 条（滚动 ${scrollTimes} 次）`,
   );
   return { loaded: countLoadedMessages(), scrolled: scrollTimes > 0 };
@@ -327,7 +329,7 @@ async function handleGetMessages(value) {
     await ensureWppReady();
     const msgs = await getMessages(limit > 0 ? limit : 0, msgOptions);
     if (msgs.length) {
-      console.log('[inject] getMessages via WPP:', msgs.length, 'includeMedia=', includeMedia);
+      debugLog('[inject] getMessages via WPP:', msgs.length, 'includeMedia=', includeMedia);
       return limit > 0 ? msgs.slice(0, limit) : msgs;
     }
   } catch (e) {
@@ -364,21 +366,21 @@ function logSnsInfoOnce(source, info) {
   if (key === lastLoggedSnsKey) return;
   lastLoggedSnsKey = key;
   if (source === 'WPP') {
-    console.log('[inject] getSnsInfo via WPP:', {
+    debugLog('[inject] getSnsInfo via WPP:', {
       snsId: info?.snsId,
       groupId: info?.groupId,
       isGroup: info?.isGroup,
       hasMeId: !!info?.meId,
     });
   } else if (source === 'React') {
-    console.log('[inject] getSnsInfo via React:', {
+    debugLog('[inject] getSnsInfo via React:', {
       snsId: info?.snsId,
       isGroup: info?.isGroup,
       isLid: info?.isLid,
       hasMeId: !!info?.meId,
     });
   } else {
-    console.log('[inject] getSnsInfo (DOM fallback):', {
+    debugLog('[inject] getSnsInfo (DOM fallback):', {
       snsId: info?.snsId,
       isGroup: info?.isGroup,
     });
@@ -433,7 +435,7 @@ async function handleGetMeId() {
     await ensureWppReady();
     const meId = getMeId() || '';
     if (meId) {
-      console.log('[inject] getMeId via WPP:', meId);
+      debugLog('[inject] getMeId via WPP:', meId);
       return meId;
     }
   } catch (e) {
@@ -459,6 +461,10 @@ async function handleGetAudioBlobUrl(value) {
     console.warn('[inject] WPP getAudioBlobUrl failed:', e?.message || e);
     return null;
   }
+}
+
+function handleRevokeAudioBlobUrl(value) {
+  return revokeAudioBlobUrl(value?.url);
 }
 
 /**
@@ -505,11 +511,11 @@ async function handleLoadMoreMessages(value) {
  * 主入口
  */
 async function main() {
-  console.log('[WhatsApp AI SDK] inject.js loaded (WPP-first mode, external classic WPP)');
+  debugLog('[WhatsApp AI SDK] inject.js loaded (WPP-first mode, external classic WPP)');
 
   try {
     await ensureWppReady();
-    console.log('[WhatsApp AI SDK] WPP ready');
+    debugLog('[WhatsApp AI SDK] WPP ready');
   } catch (e) {
     console.warn('[WhatsApp AI SDK] WPP init failed, fallback to React/DOM:', e?.message || e);
   }
@@ -529,6 +535,7 @@ async function main() {
   rpc.on('GET_SNS_INFO', handleGetSnsInfo);
   rpc.on('GET_ME_ID', handleGetMeId);
   rpc.on('GET_AUDIO_BLOB_URL', handleGetAudioBlobUrl);
+  rpc.on('REVOKE_AUDIO_BLOB_URL', handleRevokeAudioBlobUrl);
   rpc.on('GET_SEND_TIMESTAMP', handleGetSendTimestamp);
   rpc.on('GET_INPUT_CONTENT', handleGetInputContent);
   rpc.on('SEND_REPLY', handleSendReply);
@@ -541,7 +548,7 @@ async function main() {
     wppReady: wppState.ready,
     wppError: wppState.error,
   });
-  console.log(`[WhatsApp AI SDK] inject.js ready, mode=${getRuntimeMode()}, wppReady=${wppState.ready}`);
+  debugLog(`[WhatsApp AI SDK] inject.js ready, mode=${getRuntimeMode()}, wppReady=${wppState.ready}`);
 }
 
 main();

@@ -301,7 +301,6 @@ export function createAiButton({ onTrigger }) {
       row.appendChild(wrapper);
     }
 
-    console.log('[AI button] injected into:', row, 'mode=', mode);
     return true;
   }
 

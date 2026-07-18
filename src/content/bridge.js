@@ -78,6 +78,7 @@
     getMeId: function () { return call('getMeId'); },
     getInputContent: function () { return call('getInputContent'); },
     getAudioBlobUrl: function (dataId) { return call('getAudioBlobUrl', { dataId: dataId }); },
+    revokeAudioBlobUrl: function (url) { return call('revokeAudioBlobUrl', { url: url }); },
     fillInput: function (text, replace) { return call('fillInput', { text: text, replace: !!replace }); },
     sendReply: function (text) { return call('sendReply', { text: text }); },
     loadMoreHistory: function (count) { return call('loadMoreHistory', { count: count || 50 }); },

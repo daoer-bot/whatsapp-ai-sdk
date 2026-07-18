@@ -5,6 +5,8 @@
  * 当 WPP 不可用/出错时，调用方应当降级到 react-fallback.js 或 dom-fallback.js。
  */
 
+import { debugLog } from './logger.js';
+
 import { getMsgItem, formatSendTime } from './message-types.js';
 import { readComposerText } from './selectors.js';
 
@@ -135,7 +137,7 @@ export function getMeId() {
   try {
     return window.WPP.conn.getMyUserId()?.user || '';
   } catch (e) {
-    console.log('WPP getMeId error:', e);
+    debugLog('WPP getMeId error:', e);
     return '';
   }
 }
@@ -187,7 +189,7 @@ export async function getMessages(limit = 20, options = {}) {
           // WPP 通常返回旧→新；统一成「最近在前」
           const parsed = await parseMsgList(raw, { includeMedia });
           parsed.reverse();
-          console.log('[WPP] getMessages via API:', parsed.length, 'chatId=', chatId);
+          debugLog('[WPP] getMessages via API:', parsed.length, 'chatId=', chatId);
           return limit > 0 ? parsed.slice(0, limit) : parsed;
         }
       } catch (e) {
@@ -200,7 +202,7 @@ export async function getMessages(limit = 20, options = {}) {
     let msgList = await parseMsgList(all, { includeMedia });
     msgList.reverse(); // 最近在前
     if (limit > 0) msgList = msgList.slice(0, limit);
-    console.log('[WPP] getMessages via _models:', msgList.length);
+    debugLog('[WPP] getMessages via _models:', msgList.length);
     return msgList;
   } catch (e) {
     console.error('WPP getMessages error:', e);
@@ -225,6 +227,16 @@ export async function getAudioBlobUrl(dataId) {
     console.error('WPP getAudioBlobUrl error:', e);
     return null;
   }
+}
+
+/**
+ * 释放由 getAudioBlobUrl 创建的对象 URL。
+ * @param {string} url
+ */
+export function revokeAudioBlobUrl(url) {
+  if (typeof url !== 'string' || !url.startsWith('blob:')) return false;
+  URL.revokeObjectURL(url);
+  return true;
 }
 
 /**

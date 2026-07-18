@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "WhatsApp AI SDK",
+  "name": "WhatsApp AI 浏览器扩展",
   "version": "0.1.1",
-  "description": "非官方 WhatsApp Web 数据访问与可选 AI 辅助回复 SDK",
+  "description": "非官方 WhatsApp Web 数据访问与可选 AI 辅助回复浏览器扩展",
   "permissions": [
     "storage"
   ],

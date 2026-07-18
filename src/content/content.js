@@ -16,6 +16,7 @@ import { createRpc } from '../core/rpc.js';
 import { startMessageMonitor } from '../core/message-monitor.js';
 import { generateReply, streamReply } from '../core/ai-client.js';
 import { loadAiConfig } from '../core/ai-config.js';
+import { debugLog, setDebugEnabled } from '../core/logger.js';
 import { readComposerText } from '../core/selectors.js';
 import { createAiButton } from './ai-button.js';
 import { showAiExplainPanel, hideAiExplainPanel, reanchorAiExplainPanel, getAiExplainPanelChatId } from './ai-panel.js';
@@ -112,12 +113,12 @@ async function waitForWhatsAppShell(timeout = 60000) {
     if (!shellReady) {
       console.warn('[WhatsApp AI SDK] WhatsApp shell not ready in time; inject WPP anyway');
     } else {
-      console.log('[WhatsApp AI SDK] WhatsApp shell ready, injecting WPP...');
+      debugLog('[WhatsApp AI SDK] WhatsApp shell ready, injecting WPP...');
     }
 
     try {
       await injectScript(extensionAssetUrl('dist/wpp.js'), 'text/javascript');
-      console.log('[WhatsApp AI SDK] classic WPP injected');
+      debugLog('[WhatsApp AI SDK] classic WPP injected');
     } catch (e) {
       console.warn('[WhatsApp AI SDK] classic WPP inject failed:', e?.message || e);
     }
@@ -187,18 +188,18 @@ function ensureAiButton() {
   if (aiButton) return aiButton;
   aiButton = createAiButton({
     onTrigger: async (mode) => {
-      console.log('[AI] onTrigger called, mode=', mode, 'isGenerating=', isGenerating);
+      debugLog('[AI] onTrigger called, mode=', mode, 'isGenerating=', isGenerating);
       if (isGenerating) {
-        console.log('[AI] already generating, skip');
+        debugLog('[AI] already generating, skip');
         return;
       }
       isGenerating = true;
       aiButton?.setLoading(true);
-      console.log('[AI] isGenerating set to true, calling generateAndFill');
+      debugLog('[AI] isGenerating set to true, calling generateAndFill');
       try {
         await generateAndFill(mode);
       } finally {
-        console.log('[AI] generateAndFill done, resetting isGenerating');
+        debugLog('[AI] generateAndFill done, resetting isGenerating');
         isGenerating = false;
         aiButton?.setLoading(false);
         // 回填后刷新一次按钮模式（可能仍有内容）
@@ -241,7 +242,7 @@ async function generateAndFill(mode = 'ask') {
   const seq = ++generateSeq;
   const totalStartedAt = Date.now();
   const timing = {};
-  console.log('[AI] generateAndFill START, mode=', resolvedMode, 'seq=', seq);
+  debugLog('[AI] generateAndFill START, mode=', resolvedMode, 'seq=', seq);
   // 常驻到生成结束再关，避免固定 10s 挂太久
   showToast('AI 生成中…', { durationMs: 0 });
 
@@ -250,7 +251,7 @@ async function generateAndFill(mode = 'ask') {
   if (resolvedMode === 'polish') {
     draft = readComposerText();
     if (!draft) {
-      console.log('[AI] polish mode but draft empty, fallback to ask');
+      debugLog('[AI] polish mode but draft empty, fallback to ask');
     }
   }
 
@@ -273,15 +274,16 @@ async function generateAndFill(mode = 'ask') {
   ]);
   timing.prepMs = Date.now() - tPrep;
 
-  console.log('[AI] activeChat:', activeChat?.snsId || activeChat?.groupId);
+  debugLog('[AI] activeChat:', activeChat?.snsId || activeChat?.groupId);
   const requestChatId = activeChat?.snsId || activeChat?.groupId || currentChatId || '';
   if (requestChatId && requestChatId !== currentChatId) {
     currentChatId = requestChatId;
   }
 
   const meId = activeChat?.meId || meIdFromRpc || '';
-  console.log('[AI] meId:', meId || '(unavailable)');
-  console.log('[AI] config provider:', aiConfig?.provider);
+  debugLog('[AI] meId:', meId || '(unavailable)');
+  setDebugEnabled(aiConfig?.debug === true);
+  debugLog('[AI] config provider:', aiConfig?.provider);
 
   // 默认 20 条足够做话术上下文
   // WPP.chat.getMessages 可直接从 store 拉历史，一般不需要 DOM 滚动
@@ -296,11 +298,11 @@ async function generateAndFill(mode = 'ask') {
     messages = [];
   }
   timing.getMessagesMs = Date.now() - tMsg;
-  console.log('[AI] messages count:', messages.length, 'ms=', timing.getMessagesMs);
+  debugLog('[AI] messages count:', messages.length, 'ms=', timing.getMessagesMs);
 
   // 仅当 WPP/内存几乎没消息时，才用 DOM 滚动兜底（极少发生）
   if (messages.length < 3) {
-    console.log('[AI] too few messages, fallback loadMoreHistory via scroll');
+    debugLog('[AI] too few messages, fallback loadMoreHistory via scroll');
     const tHist = Date.now();
     try {
       await SDK.loadMoreHistory(HISTORY_LIMIT);
@@ -310,12 +312,12 @@ async function generateAndFill(mode = 'ask') {
     timing.loadMoreMs = Date.now() - tHist;
 
     if (seq !== generateSeq) {
-      console.log('[AI] aborted after history (seq mismatch)');
+      debugLog('[AI] aborted after history (seq mismatch)');
       hideToast();
       return;
     }
     if (requestChatId && currentChatId && requestChatId !== currentChatId) {
-      console.log('[AI] aborted after history (chat switched)');
+      debugLog('[AI] aborted after history (chat switched)');
       hideToast();
       return;
     }
@@ -325,7 +327,7 @@ async function generateAndFill(mode = 'ask') {
     } catch (e) {
       console.warn('[AI] getMessages(after load) failed:', e);
     }
-    console.log('[AI] messages count(after scroll fallback):', messages.length, 'loadMoreMs=', timing.loadMoreMs);
+    debugLog('[AI] messages count(after scroll fallback):', messages.length, 'loadMoreMs=', timing.loadMoreMs);
   } else {
     timing.loadMoreMs = 0;
   }
@@ -335,11 +337,11 @@ async function generateAndFill(mode = 'ask') {
 
   const effectiveMode = (resolvedMode === 'polish' && draft) ? 'polish' : 'ask';
   if (effectiveMode === 'polish') {
-    console.log('[AI] draft to polish:', draft.slice(0, 80));
+    debugLog('[AI] draft to polish:', draft.slice(0, 80));
   }
 
   try {
-    console.log('[AI] calling streamReply...');
+    debugLog('[AI] calling streamReply...');
     const genStartedAt = Date.now();
 
     // 默认 blocking：等完整 JSON 一次返回；stream=true 时才尝试边到边填
@@ -375,12 +377,12 @@ async function generateAndFill(mode = 'ask') {
     timing.difyMs = Date.now() - genStartedAt;
 
     if (seq !== generateSeq) {
-      console.log('[AI] aborted after stream (seq mismatch)');
+      debugLog('[AI] aborted after stream (seq mismatch)');
       hideToast();
       return;
     }
     if (requestChatId && currentChatId && requestChatId !== currentChatId) {
-      console.log('[AI] aborted after stream (chat switched)');
+      debugLog('[AI] aborted after stream (chat switched)');
       hideToast();
       return;
     }
@@ -391,8 +393,8 @@ async function generateAndFill(mode = 'ask') {
       : { suggestion: String(result || ''), explanation: '', summary: '', translation: '', raw: String(result || '') };
 
     const suggestion = (parsed.suggestion || '').trim();
-    console.log('[AI] suggestion:', suggestion.slice(0, 80));
-    console.log('[AI] meta:', {
+    debugLog('[AI] suggestion:', suggestion.slice(0, 80));
+    debugLog('[AI] meta:', {
       summary: (parsed.summary || '').slice(0, 40),
       explanation: (parsed.explanation || '').slice(0, 40),
       translation: (parsed.translation || '').slice(0, 40),
@@ -423,17 +425,17 @@ async function generateAndFill(mode = 'ask') {
     }
 
     timing.totalMs = Date.now() - totalStartedAt;
-    console.log('[AI] timing breakdown ms:', timing);
+    debugLog('[AI] timing breakdown ms:', timing);
 
     hideToast();
     if (!suggestion) {
       showToast('AI 未返回可用话术，请重试');
     }
 
-    console.log('[AI] fillInput + panel done');
+    debugLog('[AI] fillInput + panel done');
   } catch (error) {
     console.error('[AI] generate reply failed:', error);
-    console.log('[AI] timing breakdown ms (failed):', {
+    debugLog('[AI] timing breakdown ms (failed):', {
       ...timing,
       totalMs: Date.now() - totalStartedAt,
     });
@@ -707,6 +709,9 @@ window.addEventListener('message', async (event) => {
       case 'getAudioBlobUrl':
         value = await SDK.getAudioBlobUrl(data.args?.dataId);
         break;
+      case 'revokeAudioBlobUrl':
+        value = await SDK.revokeAudioBlobUrl(data.args?.url);
+        break;
       case 'fillInput':
         value = await SDK.fillInput(data.args?.text || '', !!data.args?.replace);
         break;
@@ -743,6 +748,7 @@ const SDK = {
   async getMeId() { await injectReady; return rpc.send('GET_ME_ID'); },
   async getInputContent() { await injectReady; return rpc.send('GET_INPUT_CONTENT'); },
   async getAudioBlobUrl(dataId) { await injectReady; return rpc.send('GET_AUDIO_BLOB_URL', { dataId }); },
+  async revokeAudioBlobUrl(url) { await injectReady; return rpc.send('REVOKE_AUDIO_BLOB_URL', { url }); },
   onNewMessage(callback) {
     newMessageCallbacks.push(callback);
     return () => {
@@ -756,4 +762,4 @@ const SDK = {
 };
 
 window.WhatsappAI = SDK;
-console.log('[WhatsApp AI SDK] content.js loaded, waiting for inject...');
+debugLog('[WhatsApp AI SDK] content.js loaded, waiting for inject...');

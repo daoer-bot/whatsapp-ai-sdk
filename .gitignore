@@ -5,6 +5,8 @@ node_modules/
 # keep dist tracked only if you deliberately ship prebuilt assets —
 # default: ignore local build artifacts and regenerate via npm run build
 dist/
+release/
+coverage/
 
 # logs & caches
 *.log
