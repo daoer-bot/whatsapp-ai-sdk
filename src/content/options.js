@@ -13,9 +13,12 @@ function setStatus(text, isError = false) {
 }
 
 function fillForm(config) {
-  form.provider.value = config.provider || 'dify';
+  form.provider.value = config.provider || 'mock';
   form.baseUrl.value = config.baseUrl || '';
   form.apiKey.value = config.apiKey || '';
+  if (form.model) {
+    form.model.value = config.model || '';
+  }
   form.prompt.value = config.prompt || '';
   if (form.polishPrompt) {
     form.polishPrompt.value = config.polishPrompt || '';
@@ -44,6 +47,7 @@ form.addEventListener('submit', async (event) => {
       provider: form.provider.value,
       baseUrl: form.baseUrl.value.trim(),
       apiKey: form.apiKey.value.trim(),
+      model: form.model ? form.model.value.trim() : '',
       prompt: form.prompt.value.trim(),
       polishPrompt: form.polishPrompt ? form.polishPrompt.value.trim() : '',
       debug: form.debug ? form.debug.checked : false,

@@ -1,13 +1,16 @@
 /**
  * core/ai-client.js — 极简 AI 客户端
  *
- * 本轮支持：
+ * 支持 provider：
  * - mock：本地拼一个演示回复
- * - dify：调用 Dify Chat 接口生成回复
- * - mode=ask：根据聊天历史生成回复
- * - mode=polish：优化用户已输入的草稿措辞
+ * - dify：调用 Dify Chat Messages API
+ * - openai：调用 OpenAI 兼容 Chat Completions API（含多数中转/网关）
  *
- * Dify 期望返回 JSON：
+ * 支持 mode：
+ * - ask：根据聊天历史生成回复
+ * - polish：优化用户已输入的草稿措辞
+ *
+ * 模型返回可为纯文本，或结构化 JSON：
  * {
  *   "话术建议": "...",
  *   "解释": "...",
@@ -18,6 +21,9 @@
 
 import { buildChatContext, buildPromptText, buildPolishPromptText } from './prompt-builder.js';
 import { debugLog } from './logger.js';
+
+/** openai provider 未配置 model 时的默认值 */
+export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
 
 function lastCustomerMessage(messages = []) {
   const reversed = [...messages].reverse();
@@ -73,18 +79,48 @@ function buildMockPolish({ draft }) {
   });
 }
 
-function resolveDifyBaseUrl(baseUrl) {
-  let value = (baseUrl || '').trim();
+/**
+ * 从 HTTPS 页面发起 HTTP 请求会被 Chrome 拦截（Mixed Content），统一升级为 HTTPS。
+ * @param {string} baseUrl
+ * @returns {string}
+ */
+export function upgradeToHttps(baseUrl) {
+  return String(baseUrl || '').trim().replace(/^http:\/\//i, 'https://');
+}
+
+/**
+ * 规范化 Dify Chat Messages 接口地址。
+ * 已带 /chat-messages 的保持不变；否则自动补全。
+ * @param {string} baseUrl
+ * @returns {string}
+ */
+export function resolveDifyBaseUrl(baseUrl) {
+  let value = upgradeToHttps(baseUrl);
   if (!value) {
     throw new Error('Dify baseUrl is required');
   }
-  // 从 HTTPS 页面（web.whatsapp.com）发起 HTTP 请求会被 Chrome 拦截（Mixed Content），
-  // 自动升级为 HTTPS
-  value = value.replace(/^http:\/\//i, 'https://');
   if (/\/chat-messages\/?$/i.test(value)) {
-    return value;
+    return value.replace(/\/+$/, '');
   }
   return value.replace(/\/+$/, '') + '/chat-messages';
+}
+
+/**
+ * 规范化 OpenAI 兼容 Chat Completions 接口地址。
+ * 已带 /chat/completions 的保持不变；否则自动补全。
+ * 支持填到 /v1 或完整路径。
+ * @param {string} baseUrl
+ * @returns {string}
+ */
+export function resolveOpenAIBaseUrl(baseUrl) {
+  let value = upgradeToHttps(baseUrl);
+  if (!value) {
+    throw new Error('OpenAI baseUrl is required');
+  }
+  if (/\/chat\/completions\/?$/i.test(value)) {
+    return value.replace(/\/+$/, '');
+  }
+  return value.replace(/\/+$/, '') + '/chat/completions';
 }
 
 function extractDifyText(payload) {
@@ -217,7 +253,7 @@ function buildRequestPrompt({ chat, messages, config, meId, mode, draft }) {
  * @param {RequestInit} options
  * @param {number} timeoutMs
  */
-async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000, label = 'AI') {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -227,7 +263,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
     });
   } catch (error) {
     if (error?.name === 'AbortError') {
-      throw new Error(`Dify request timeout after ${Math.round(timeoutMs / 1000)}s`);
+      throw new Error(`${label} request timeout after ${Math.round(timeoutMs / 1000)}s`);
     }
     throw error;
   } finally {
@@ -280,7 +316,7 @@ async function createDifyResponse({ chat, messages, config, responseMode, meId, 
       response_mode: responseMode,
       user: senderPhone || chat?.snsId || chat?.groupId || 'whatsapp-user',
     }),
-  }, timeout);
+  }, timeout, 'Dify');
 
   if (!response.ok) {
     let detail = '';
@@ -432,6 +468,205 @@ async function requestDifyStream({ chat, messages, config, onChunk, meId, mode, 
   return parseAiAnswer(fullText);
 }
 
+function extractOpenAIText(payload) {
+  if (!payload || typeof payload !== 'object') return '';
+  const choice = payload.choices?.[0];
+  if (!choice) {
+    return payload.answer
+      || payload.output?.text
+      || payload.output
+      || payload.text
+      || '';
+  }
+
+  const messageContent = choice.message?.content;
+  if (typeof messageContent === 'string') return messageContent;
+  if (Array.isArray(messageContent)) {
+    return messageContent
+      .map((part) => {
+        if (typeof part === 'string') return part;
+        if (part && typeof part.text === 'string') return part.text;
+        return '';
+      })
+      .filter(Boolean)
+      .join('');
+  }
+
+  if (typeof choice.text === 'string') return choice.text;
+  if (typeof choice.delta?.content === 'string') return choice.delta.content;
+  return '';
+}
+
+function extractOpenAIStreamDelta(payload) {
+  if (!payload || typeof payload !== 'object') return '';
+  const choice = payload.choices?.[0];
+  if (!choice) return '';
+
+  const delta = choice.delta?.content;
+  if (typeof delta === 'string') return delta;
+
+  const messageContent = choice.message?.content;
+  if (typeof messageContent === 'string') return messageContent;
+  if (typeof choice.text === 'string') return choice.text;
+  return '';
+}
+
+async function createOpenAIResponse({ chat, messages, config, stream, meId, mode, draft, timeoutMs }) {
+  const prompt = buildRequestPrompt({ chat, messages, config, meId, mode, draft });
+  const baseUrl = resolveOpenAIBaseUrl(config?.baseUrl || '');
+  const apiKey = (config?.apiKey || '').trim();
+  const model = String(config?.model || '').trim() || DEFAULT_OPENAI_MODEL;
+
+  if (!apiKey) {
+    throw new Error('OpenAI apiKey is required');
+  }
+
+  const timeout = timeoutMs || (stream ? 120000 : 90000);
+
+  // 与 Dify 保持一致：prompt-builder 已把 system + 上下文拼成完整任务文本。
+  // 这里只发一条 user message，避免 system 被塞两遍；也兼容只认 messages[] 的中转网关。
+  const chatMessages = [{ role: 'user', content: prompt }];
+
+  debugLog('[AI] OpenAI request start:', {
+    baseUrl,
+    model,
+    stream: !!stream,
+    mode: mode || 'ask',
+    timeoutMs: timeout,
+    promptChars: prompt.length,
+  });
+
+  const response = await fetchWithTimeout(baseUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + apiKey,
+    },
+    body: JSON.stringify({
+      model,
+      messages: chatMessages,
+      temperature: 0.7,
+      stream: !!stream,
+    }),
+  }, timeout, 'OpenAI');
+
+  if (!response.ok) {
+    let detail = '';
+    try {
+      detail = (await response.text()).slice(0, 200);
+    } catch {
+      // ignore
+    }
+    throw new Error(
+      'OpenAI request failed: ' + response.status + (detail ? ` ${detail}` : ''),
+    );
+  }
+
+  return response;
+}
+
+async function requestOpenAI({ chat, messages, config, meId, mode, draft }) {
+  const startedAt = Date.now();
+  const response = await createOpenAIResponse({
+    chat,
+    messages,
+    config,
+    stream: false,
+    meId,
+    mode,
+    draft,
+  });
+
+  const data = await response.json();
+  const text = extractOpenAIText(data);
+  debugLog('[AI] OpenAI blocking done in', Date.now() - startedAt, 'ms, answerChars=', String(text || '').length);
+  return parseAiAnswer(text);
+}
+
+async function requestOpenAIStream({ chat, messages, config, onChunk, meId, mode, draft }) {
+  const startedAt = Date.now();
+  const response = await createOpenAIResponse({
+    chat,
+    messages,
+    config,
+    stream: true,
+    meId,
+    mode,
+    draft,
+  });
+
+  // 某些网关忽略 stream=true，仍返回普通 JSON
+  const contentType = String(response.headers?.get?.('content-type') || '').toLowerCase();
+  if (!response.body || contentType.includes('application/json')) {
+    const data = await response.json();
+    const text = extractOpenAIText(data);
+    const parsed = parseAiAnswer(text);
+    if (parsed.suggestion) onChunk?.(parsed.suggestion, parsed.suggestion);
+    return parsed;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let fullText = '';
+  let chunkCount = 0;
+
+  const flushBlock = (block) => {
+    const lines = block.split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data:')) continue;
+      const data = trimmed.slice(5).trim();
+      if (!data || data === '[DONE]') continue;
+
+      let payload = null;
+      try {
+        payload = JSON.parse(data);
+      } catch {
+        fullText += data;
+        chunkCount += 1;
+        onChunk?.(data, fullText);
+        continue;
+      }
+
+      const delta = extractOpenAIStreamDelta(payload);
+      if (!delta) continue;
+      fullText += delta;
+      chunkCount += 1;
+      onChunk?.(delta, fullText);
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+
+    let separatorIndex = buffer.indexOf('\n\n');
+    while (separatorIndex >= 0) {
+      const block = buffer.slice(0, separatorIndex).trim();
+      buffer = buffer.slice(separatorIndex + 2);
+      if (block) flushBlock(block);
+      separatorIndex = buffer.indexOf('\n\n');
+    }
+
+    if (done) {
+      const tail = buffer.trim();
+      if (tail) flushBlock(tail);
+      break;
+    }
+  }
+
+  debugLog(
+    '[AI] OpenAI stream done in',
+    Date.now() - startedAt,
+    'ms, chunks=',
+    chunkCount,
+    'answerChars=',
+    fullText.length,
+  );
+  return parseAiAnswer(fullText);
+}
+
 /**
  * @param {object} args
  * @param {object} args.chat
@@ -457,13 +692,16 @@ export async function generateReply({ chat, messages, config = {}, meId, mode = 
     return requestDify({ chat, messages, config, meId, mode: resolvedMode, draft });
   }
 
+  if (provider === 'openai') {
+    return requestOpenAI({ chat, messages, config, meId, mode: resolvedMode, draft });
+  }
+
   throw new Error('Unsupported AI provider: ' + provider);
 }
 
 /**
- * 默认走 blocking：Dify 工作流常返回整段 JSON，streaming 也要等结束才能解析，
- * 用户体感更像“干等”；blocking 更简单，并有超时保护。
- * 若配置 config.stream === true，才用 SSE 流式。
+ * 默认走 blocking：结构化 JSON 通常要等整段结束才能解析；
+ * 用户体感更像“干等”。仅当 config.stream === true 时使用 SSE 流式。
  */
 export async function streamReply({ chat, messages, config = {}, onChunk, meId, mode = 'ask', draft = '' }) {
   const provider = config.provider || 'mock';
@@ -478,11 +716,19 @@ export async function streamReply({ chat, messages, config = {}, onChunk, meId, 
   }
 
   if (provider === 'dify') {
-    // 默认 blocking；仅显式开启 stream 时用 SSE
     if (config.stream === true) {
       return requestDifyStream({ chat, messages, config, onChunk, meId, mode: resolvedMode, draft });
     }
     const result = await requestDify({ chat, messages, config, meId, mode: resolvedMode, draft });
+    if (result?.suggestion) onChunk?.(result.suggestion, result.suggestion);
+    return result;
+  }
+
+  if (provider === 'openai') {
+    if (config.stream === true) {
+      return requestOpenAIStream({ chat, messages, config, onChunk, meId, mode: resolvedMode, draft });
+    }
+    const result = await requestOpenAI({ chat, messages, config, meId, mode: resolvedMode, draft });
     if (result?.suggestion) onChunk?.(result.suggestion, result.suggestion);
     return result;
   }

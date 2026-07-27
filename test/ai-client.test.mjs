@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseAiAnswer } from '../src/core/ai-client.js';
+import {
+  parseAiAnswer,
+  resolveDifyBaseUrl,
+  resolveOpenAIBaseUrl,
+  upgradeToHttps,
+  DEFAULT_OPENAI_MODEL,
+  generateReply,
+} from '../src/core/ai-client.js';
 import { buildChatContext, buildPolishPromptText } from '../src/core/prompt-builder.js';
 
 test('parseAiAnswer parses structured JSON text', () => {
@@ -19,6 +26,74 @@ test('parseAiAnswer parses structured JSON text', () => {
 test('parseAiAnswer handles fenced JSON and plain text', () => {
   assert.equal(parseAiAnswer('```json\n{"suggestion":"hello"}\n```').suggestion, 'hello');
   assert.equal(parseAiAnswer('plain reply').suggestion, 'plain reply');
+});
+
+test('upgradeToHttps upgrades mixed-content http urls', () => {
+  assert.equal(upgradeToHttps('http://ai.example.com/v1'), 'https://ai.example.com/v1');
+  assert.equal(upgradeToHttps('https://ai.example.com/v1'), 'https://ai.example.com/v1');
+});
+
+test('resolveDifyBaseUrl appends chat-messages when needed', () => {
+  assert.equal(
+    resolveDifyBaseUrl('https://ai.example.com/v1'),
+    'https://ai.example.com/v1/chat-messages',
+  );
+  assert.equal(
+    resolveDifyBaseUrl('https://ai.example.com/v1/chat-messages'),
+    'https://ai.example.com/v1/chat-messages',
+  );
+  assert.equal(
+    resolveDifyBaseUrl('http://ai.example.com/v1/'),
+    'https://ai.example.com/v1/chat-messages',
+  );
+  assert.throws(() => resolveDifyBaseUrl(''), /baseUrl is required/);
+});
+
+test('resolveOpenAIBaseUrl appends chat/completions when needed', () => {
+  assert.equal(
+    resolveOpenAIBaseUrl('https://api.openai.com/v1'),
+    'https://api.openai.com/v1/chat/completions',
+  );
+  assert.equal(
+    resolveOpenAIBaseUrl('https://gateway.example.com/v1/chat/completions'),
+    'https://gateway.example.com/v1/chat/completions',
+  );
+  assert.equal(
+    resolveOpenAIBaseUrl('http://gateway.example.com/v1/'),
+    'https://gateway.example.com/v1/chat/completions',
+  );
+  assert.equal(DEFAULT_OPENAI_MODEL, 'gpt-4o-mini');
+  assert.throws(() => resolveOpenAIBaseUrl(''), /baseUrl is required/);
+});
+
+test('generateReply mock ask and polish modes work offline', async () => {
+  const ask = await generateReply({
+    chat: { snsId: '123' },
+    messages: [{ body: 'price?', send_type: 2 }],
+    config: { provider: 'mock' },
+    mode: 'ask',
+  });
+  assert.match(ask.suggestion, /price\?/);
+
+  const polish = await generateReply({
+    chat: { snsId: '123' },
+    messages: [],
+    config: { provider: 'mock' },
+    mode: 'polish',
+    draft: 'hello customer',
+  });
+  assert.match(polish.suggestion, /Hello customer/);
+});
+
+test('generateReply rejects unknown provider', async () => {
+  await assert.rejects(
+    () => generateReply({
+      chat: {},
+      messages: [],
+      config: { provider: 'not-a-real-provider' },
+    }),
+    /Unsupported AI provider/,
+  );
 });
 
 test('buildChatContext normalizes inbound and outbound messages', () => {

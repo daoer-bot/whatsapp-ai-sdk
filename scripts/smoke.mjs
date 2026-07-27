@@ -92,12 +92,47 @@ try {
 console.log('[smoke] checking dist/content.js contains key markers...');
 try {
   const content = readFileSync(join(projectRoot, 'dist/content.js'), 'utf8');
-  for (const marker of ['WhatsappAI', 'generateAndFill', 'INJECT_READY', 'includeMedia']) {
+  for (const marker of [
+    'WhatsappAI',
+    'generateAndFill',
+    'INJECT_READY',
+    'includeMedia',
+    'chat/completions',
+    'Unsupported AI provider',
+  ]) {
     if (content.includes(marker)) ok(`content.js has "${marker}"`);
     else fail(`content.js missing marker: ${marker}`);
   }
 } catch (e) {
   fail(`read content.js: ${e.message}`);
+}
+
+console.log('[smoke] checking options page multi-provider wiring...');
+try {
+  const optionsHtml = readFileSync(join(projectRoot, 'options.html'), 'utf8');
+  for (const marker of ['value="mock"', 'value="dify"', 'value="openai"', 'name="model"']) {
+    if (optionsHtml.includes(marker)) ok(`options.html has ${marker}`);
+    else fail(`options.html missing: ${marker}`);
+  }
+  const optionsJs = readFileSync(join(projectRoot, 'dist/options.js'), 'utf8');
+  if (optionsJs.includes('model')) ok('options.js persists model field');
+  else fail('options.js missing model field wiring');
+} catch (e) {
+  fail(`options multi-provider check: ${e.message}`);
+}
+
+console.log('[smoke] checking README load path guidance...');
+try {
+  const readme = readFileSync(join(projectRoot, 'README.md'), 'utf8');
+  if (/不要.*只选择.*dist|不是 `dist\/`|不是\*\*`dist\/`\*\*/.test(readme)
+    && /仓库根目录/.test(readme)
+    && /manifest\.json/.test(readme)) {
+    ok('README warns to load repo root, not dist/');
+  } else {
+    fail('README missing explicit root-vs-dist load guidance');
+  }
+} catch (e) {
+  fail(`README check: ${e.message}`);
 }
 
 console.log('[smoke] checking dist/inject.js markers...');

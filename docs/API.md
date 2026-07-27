@@ -75,8 +75,26 @@ RPC 默认会在约 15 秒后超时；WPP 初始化可能需要更久。WhatsApp
 
 扩展选项页支持：
 
-- `mock`：本地演示，不发送网络请求
-- `dify`：调用用户自行配置的 Dify Chat Messages API
-- `debug`：默认关闭；开启后会输出调试日志，部分日志可能包含消息摘要
+| Provider | 说明 | Base URL | 其他 |
+| --- | --- | --- | --- |
+| `mock` | 本地演示，不发网络请求（默认） | 无需填写 | — |
+| `dify` | Dify Chat Messages API | 填到 `/v1` 或完整 `/chat-messages` | API Key |
+| `openai` | OpenAI 兼容 Chat Completions | 填到 `/v1` 或完整 `/chat/completions` | API Key、Model（默认 `gpt-4o-mini`） |
+| `debug` | 调试日志开关 | — | 默认关闭；开启后可能输出消息摘要 |
+
+URL 规则：
+
+- 以 `http://` 填写的地址会自动升级为 `https://`（避免 Mixed Content）
+- `dify`：未以 `/chat-messages` 结尾时自动补全
+- `openai`：未以 `/chat/completions` 结尾时自动补全
+
+模式：
+
+- 输入框为空：`ask`（根据聊天历史生成回复）
+- 输入框已有内容：`polish`（润色草稿）
+
+可选：在配置中设置 `stream: true`（当前仅能通过 storage 写入，选项页未暴露）以启用 SSE 流式；默认 blocking。
 
 API key 保存在 `chrome.storage.local`，不会加密。不要在共享浏览器配置或高敏感生产环境中直接复用。
+
+AI 请求由 content script 发起，endpoint 必须允许来自 `https://web.whatsapp.com` 的 CORS。

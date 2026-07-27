@@ -94,26 +94,34 @@
     <div class="page">
       <div class="card">
         <h1>AI 设置</h1>
-        <p>配置 Dify Chat 接口后，WhatsApp Web 中的 AI 按钮会使用这里的参数生成回复。</p>
+        <p>配置 AI 接口后，WhatsApp Web 中的 AI 按钮会使用这里的参数生成回复。</p>
 
         <form id="config-form">
           <div class="field">
             <label for="provider">Provider</label>
             <select id="provider" name="provider">
+              <option value="mock">mock（本地演示，不发网络请求）</option>
               <option value="dify">dify</option>
-              <option value="mock">mock</option>
+              <option value="openai">openai</option>
             </select>
+            <div class="hint">mock：本地演示；dify：Dify Chat Messages API；openai：兼容 OpenAI Chat Completions 的接口（含多数中转/网关）。</div>
           </div>
 
           <div class="field">
-            <label for="baseUrl">Dify URL</label>
-            <input id="baseUrl" name="baseUrl" type="url" placeholder="https://ai.example.com/v1/chat-messages" />
-            <div class="hint">建议填写完整接口地址；如果你的网关不是默认 chat-messages，可直接在这里改。</div>
+            <label for="baseUrl">API Base URL</label>
+            <input id="baseUrl" name="baseUrl" type="url" placeholder="https://ai.example.com/v1" />
+            <div class="hint">填到 /v1 即可：dify 会自动补 /chat-messages，openai 会自动补 /chat/completions。也可直接填完整路径。</div>
           </div>
 
           <div class="field">
             <label for="apiKey">API Key</label>
-            <input id="apiKey" name="apiKey" type="password" placeholder="app-xxxx" />
+            <input id="apiKey" name="apiKey" type="password" placeholder="app-xxxx / sk-xxxx" />
+          </div>
+
+          <div class="field">
+            <label for="model">Model（openai）</label>
+            <input id="model" name="model" type="text" placeholder="gpt-4o-mini" />
+            <div class="hint">仅 openai provider 需要；留空默认 gpt-4o-mini。dify 可忽略。</div>
           </div>
 
           <div class="field">
