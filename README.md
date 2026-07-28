@@ -31,11 +31,19 @@
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
-**截图 / 演示 GIF**：请放到 [`docs/assets/`](docs/assets/README.md)（勿提交真实聊天或 API key）。补图后可在本段下方引用，例如：
+## 演示
 
-```markdown
-![AI 入口](docs/assets/hero-ai-button.png)
-```
+约 38 秒：输入框旁 **✦** → 生成建议 → 解释面板（演示会话，非真实客户）。
+
+https://github.com/daoer-bot/whatsapp-ai-sdk/raw/main/docs/assets/demo-usage.mp4
+
+[![演示封面：AI 入口与会话](docs/assets/demo-poster.jpg)](docs/assets/demo-usage.mp4)
+
+| AI 入口（输入框旁 ✦） | 解释面板（建议 / 翻译） |
+| --- | --- |
+| ![AI 入口](docs/assets/hero-ai-button.jpg) | ![解释面板](docs/assets/demo-frame-mid.jpg) |
+
+资源说明见 [`docs/assets/`](docs/assets/README.md)。若 GitHub 网页未内嵌播放，点击封面或 [demo-usage.mp4](docs/assets/demo-usage.mp4) 下载/打开。
 
 ## 能力概览
 

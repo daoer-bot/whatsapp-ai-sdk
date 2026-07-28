@@ -154,6 +154,10 @@ for (const rel of [
   'docs/THREAT_MODEL.md',
   'docs/SELECTOR_CHECKLIST.md',
   'docs/assets/README.md',
+  'docs/assets/demo-usage.mp4',
+  'docs/assets/demo-poster.jpg',
+  'docs/assets/hero-ai-button.jpg',
+  'docs/assets/demo-frame-mid.jpg',
   'test/rpc.test.mjs',
   'test/prompt-builder.test.mjs',
   'test/message-types.test.mjs',
@@ -161,6 +165,17 @@ for (const rel of [
   const abs = join(projectRoot, rel);
   if (existsSync(abs) && statSync(abs).size > 0) ok(`present: ${rel}`);
   else fail(`missing portfolio/doc/test file: ${rel}`);
+}
+
+try {
+  const readme = readFileSync(join(projectRoot, 'README.md'), 'utf8');
+  if (/demo-usage\.mp4/.test(readme) && /demo-poster\.jpg/.test(readme)) {
+    ok('README embeds demo video assets');
+  } else {
+    fail('README missing demo-usage.mp4 / demo-poster.jpg references');
+  }
+} catch (e) {
+  fail(`README demo asset check: ${e.message}`);
 }
 
 console.log('[smoke] checking composer anti-duplication markers...');

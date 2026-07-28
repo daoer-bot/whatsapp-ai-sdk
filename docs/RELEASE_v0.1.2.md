@@ -12,6 +12,7 @@ Date: 2026-07-28
 - **In-page settings drawer** (right-click / long-press ✦)
 - **Composer anti-duplication** fixes (Lexical double-insert / polish not updating input)
 - **Docs for portfolio & safety**: EN README, threat model, selector regression checklist
+- **Demo video**: [`docs/assets/demo-usage.mp4`](./assets/demo-usage.mp4) (~38s) + still frames
 - **Tests**: 30 pure-logic unit tests (ai-client, rpc, prompt-builder, message-types)
 
 ## Install (developers)

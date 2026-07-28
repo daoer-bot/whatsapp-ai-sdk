@@ -21,7 +21,19 @@ Unofficial **Chromium Manifest V3 browser extension** for WhatsApp Web: read the
 | Lexical composer easily double-inserts text | Single-write path, WPP `setTextContent` when available, verification |
 | Shipping AI without leaking chats by default | Default **`mock`** provider; no bundled keys or remote endpoints |
 
-Screenshots / short demo GIF belong in [`docs/assets/`](docs/assets/README.md) (add locally; do not commit real chats or API keys).
+## Demo
+
+~38s walkthrough: **✦** beside the composer → suggestion → explain panel (demo chat, not a real customer).
+
+https://github.com/daoer-bot/whatsapp-ai-sdk/raw/main/docs/assets/demo-usage.mp4
+
+[![Demo poster: AI entry and chat](docs/assets/demo-poster.jpg)](docs/assets/demo-usage.mp4)
+
+| AI entry (✦ by composer) | Explain panel |
+| --- | --- |
+| ![AI entry](docs/assets/hero-ai-button.jpg) | ![Explain panel](docs/assets/demo-frame-mid.jpg) |
+
+Assets notes: [`docs/assets/`](docs/assets/README.md). If the video does not inline on GitHub, open [demo-usage.mp4](docs/assets/demo-usage.mp4).
 
 ## Features
 
