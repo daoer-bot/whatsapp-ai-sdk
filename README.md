@@ -33,17 +33,21 @@
 
 ## 演示
 
-约 38 秒真机录屏：输入框旁 **✦** → 生成建议 → 解释面板（演示会话，非真实客户）。
+真机 GIF（GitHub 上**自动循环播放**，不用下载；演示会话，非真实客户）。
 
-https://github.com/daoer-bot/whatsapp-ai-sdk/raw/main/docs/assets/demo-usage.mp4
+### 生成回复（输入框为空 → 点 ✦）
 
-[![演示封面：AI 入口与会话](docs/assets/demo-poster.jpg)](docs/assets/demo-usage.mp4)
+![生成回复演示](docs/assets/demo-generate.gif)
 
-| 真机：AI 入口 | 真机：解释面板 |
+### 润色草稿（输入框有内容 → 点 ✦）
+
+![润色草稿演示](docs/assets/demo-polish.gif)
+
+| 真机截图：AI 入口 | 真机截图：解释面板 |
 | --- | --- |
 | ![AI 入口](docs/assets/hero-ai-button.jpg) | ![解释面板](docs/assets/demo-frame-mid.jpg) |
 
-矢量图 + 录屏资源见 [`docs/assets/`](docs/assets/README.md)。GitHub 若未内嵌播放，点封面或 [demo-usage.mp4](docs/assets/demo-usage.mp4)。
+原片 MP4（可选）：[demo-usage.mp4](docs/assets/demo-usage.mp4)。更多资源见 [`docs/assets/`](docs/assets/README.md)。
 
 ## 能力概览
 

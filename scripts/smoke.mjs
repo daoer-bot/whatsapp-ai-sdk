@@ -157,8 +157,9 @@ for (const rel of [
   'docs/assets/hero-banner.svg',
   'docs/assets/architecture.svg',
   'docs/assets/ui-mock.svg',
+  'docs/assets/demo-generate.gif',
+  'docs/assets/demo-polish.gif',
   'docs/assets/demo-usage.mp4',
-  'docs/assets/demo-poster.jpg',
   'docs/assets/hero-ai-button.jpg',
   'docs/assets/demo-frame-mid.jpg',
   'test/rpc.test.mjs',
@@ -172,10 +173,10 @@ for (const rel of [
 
 try {
   const readme = readFileSync(join(projectRoot, 'README.md'), 'utf8');
-  if (/demo-usage\.mp4/.test(readme) && /demo-poster\.jpg/.test(readme)) {
-    ok('README embeds demo video assets');
+  if (/demo-generate\.gif/.test(readme) && /demo-polish\.gif/.test(readme)) {
+    ok('README embeds generate/polish autoplay GIFs');
   } else {
-    fail('README missing demo-usage.mp4 / demo-poster.jpg references');
+    fail('README missing demo-generate.gif / demo-polish.gif references');
   }
   if (/architecture\.svg/.test(readme) && /ui-mock\.svg/.test(readme) && /hero-banner\.svg/.test(readme)) {
     ok('README embeds architecture/ui/hero SVGs');

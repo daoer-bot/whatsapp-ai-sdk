@@ -33,17 +33,21 @@ Unofficial **Chromium Manifest V3 browser extension** for WhatsApp Web: read the
 
 ## Demo
 
-~38s real recording: **✦** beside the composer → suggestion → explain panel (demo chat, not a real customer).
+Real walkthrough as **autoplaying GIFs** on GitHub (no download; demo chat, not a real customer).
 
-https://github.com/daoer-bot/whatsapp-ai-sdk/raw/main/docs/assets/demo-usage.mp4
+### Generate reply (empty composer → ✦)
 
-[![Demo poster: AI entry and chat](docs/assets/demo-poster.jpg)](docs/assets/demo-usage.mp4)
+![Generate reply demo](docs/assets/demo-generate.gif)
 
-| Live: AI entry | Live: explain panel |
+### Polish draft (composer has text → ✦)
+
+![Polish draft demo](docs/assets/demo-polish.gif)
+
+| Live still: AI entry | Live still: explain panel |
 | --- | --- |
 | ![AI entry](docs/assets/hero-ai-button.jpg) | ![Explain panel](docs/assets/demo-frame-mid.jpg) |
 
-Vector + recording notes: [`docs/assets/`](docs/assets/README.md). If the video does not inline on GitHub, open [demo-usage.mp4](docs/assets/demo-usage.mp4).
+Optional source MP4: [demo-usage.mp4](docs/assets/demo-usage.mp4). More assets: [`docs/assets/`](docs/assets/README.md).
 
 ## Features
 
