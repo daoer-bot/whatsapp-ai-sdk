@@ -187,6 +187,29 @@ try {
   fail(`README demo asset check: ${e.message}`);
 }
 
+console.log('[smoke] checking AI explain panel markers...');
+try {
+  const panel = readFileSync(join(projectRoot, 'src/content/ai-panel.js'), 'utf8');
+  for (const marker of [
+    'position: fixed',
+    'showAiExplainPanel',
+    'AI 解释',
+    'queryComposerRect',
+    'z-index: 2147483000',
+  ]) {
+    if (panel.includes(marker)) ok(`ai-panel.js has "${marker}"`);
+    else fail(`ai-panel.js missing marker: ${marker}`);
+  }
+  const content = readFileSync(join(projectRoot, 'dist/content.js'), 'utf8');
+  if (content.includes('waai-explain-panel') && content.includes('AI 解释')) {
+    ok('dist/content.js bundles explain panel');
+  } else {
+    fail('dist/content.js missing explain panel bundle markers');
+  }
+} catch (e) {
+  fail(`ai-panel check: ${e.message}`);
+}
+
 console.log('[smoke] checking composer anti-duplication markers...');
 try {
   const composer = readFileSync(join(projectRoot, 'src/core/composer.js'), 'utf8');
