@@ -2,6 +2,13 @@
 
 ## 0.1.2 - 2026-07-28
 
+### 配置与 AI
+
+- 新增 `outputMode`：`text`（默认，只写输入框）/ `structured`（JSON 契约 + 解释面板）
+- 人设 Prompt 与输出序列化解耦：契约由 `prompt-builder` 按模式自动追加，避免改 Prompt 踩碎面板
+- mock 在 `text` 下不返回解释字段；`structured` 下仍演示完整面板
+- 设置抽屉与 options 页支持切换输出模式
+
 ### 展示与文档
 
 - 明确产品定位：Chromium MV3 **浏览器扩展**（页面 API 为 `window.WhatsappAI`，非 npm runtime SDK）

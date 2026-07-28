@@ -59,6 +59,7 @@
   - `mock`：本地演示，不发网络请求（**默认**）
   - `dify`：Dify Chat Messages API
   - `openai`：OpenAI 兼容 Chat Completions（含多数中转/网关）
+  - **输出模式** `outputMode`：`text`（默认，只写输入框）/ `structured`（JSON + 解释面板）；人设 Prompt 可随便改，契约由代码追加
 - 类型声明：[types/whatsapp-ai-sdk.d.ts](types/whatsapp-ai-sdk.d.ts)
 - 文档：[API](docs/API.md) · [架构](docs/ARCHITECTURE.md) · [兼容性](docs/COMPATIBILITY.md) · [威胁模型](docs/THREAT_MODEL.md) · [选择器回归清单](docs/SELECTOR_CHECKLIST.md)
 

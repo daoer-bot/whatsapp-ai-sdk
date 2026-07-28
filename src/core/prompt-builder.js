@@ -1,6 +1,12 @@
 /**
  * core/prompt-builder.js — 把 WhatsApp 消息整理成适合 AI 的上下文
+ *
+ * 分层：
+ * 1) systemPrompt / polishPrompt — 用户可改的人设与业务口吻
+ * 2) outputMode — text | structured；序列化契约由代码追加，避免用户改 prompt 时踩碎面板
  */
+
+import { normalizeOutputMode, OUTPUT_MODE_STRUCTURED } from './ai-config.js';
 
 function normalizeRole(item) {
   return item?.send_type === 2 ? 'customer' : 'assistant';
@@ -65,25 +71,81 @@ export function buildChatContext({ chat, messages, limit = 50, meId }) {
   };
 }
 
+function buildContextHeader(ctx, { includePhones = true } = {}) {
+  return [
+    `Chat ID: ${ctx.chatId || 'unknown'}`,
+    `Group Chat: ${ctx.isGroup ? 'yes' : 'no'}`,
+    ctx.snsNickname ? `Nickname: ${ctx.snsNickname}` : '',
+    includePhones && ctx.sender_phone ? `Sender Phone: ${ctx.sender_phone}` : '',
+    includePhones && ctx.receiver_phone ? `Receiver Phone: ${ctx.receiver_phone}` : '',
+  ].filter(Boolean);
+}
+
+/**
+ * 输出契约后缀（用户 prompt 之外由代码追加）
+ * @param {'ask'|'polish'} mode
+ * @param {string} outputMode
+ */
+export function buildOutputContract({ mode = 'ask', outputMode } = {}) {
+  const resolved = normalizeOutputMode(outputMode);
+  const isPolish = mode === 'polish';
+
+  if (resolved === OUTPUT_MODE_STRUCTURED) {
+    return [
+      'Output contract (do not ignore):',
+      'Return a single JSON object only. No markdown fences, no extra commentary.',
+      'Required keys (Chinese keys preferred; English aliases also accepted by the client):',
+      '{',
+      '  "话术建议": "the reply or polished text to put into the chat input",',
+      '  "解释": "brief reason for the wording",',
+      '  "总结": "one-line context summary",',
+      '  "原文翻译": "optional translation; empty string if not needed"',
+      '}',
+      'English aliases: suggestion / reply, explanation / reason, summary, translation.',
+      isPolish
+        ? '话术建议 must be the polished draft only (same language as the user draft).'
+        : '话术建议 must be the outbound reply only (same language as the customer when possible).',
+    ].join('\n');
+  }
+
+  // text mode
+  if (isPolish) {
+    return [
+      'Output contract (do not ignore):',
+      'Return only the polished message text.',
+      'Do not add explanations, labels, quotes, markdown, or JSON.',
+      'Keep the original language and intent.',
+    ].join('\n');
+  }
+
+  return [
+    'Output contract (do not ignore):',
+    'Return only the suggested reply text to send in the chat input.',
+    'Do not add explanations, labels, quotes, markdown, or JSON.',
+  ].join('\n');
+}
+
 /**
  * 生成回复模式的 prompt（输入框为空时使用）
+ * @param {object} args
+ * @param {object} args.chat
+ * @param {Array} args.messages
+ * @param {string} [args.systemPrompt]
+ * @param {string} [args.meId]
+ * @param {string} [args.outputMode]
  */
-export function buildPromptText({ chat, messages, systemPrompt, meId }) {
+export function buildPromptText({ chat, messages, systemPrompt, meId, outputMode }) {
   const ctx = buildChatContext({ chat, messages, meId });
   const lines = ctx.messages.map((item) => `${item.role === 'customer' ? 'Customer' : 'Me'}: ${item.content}`);
   return [
     systemPrompt || 'You are a professional sales assistant. Generate a concise, natural reply based on the chat history.',
     '',
-    `Chat ID: ${ctx.chatId || 'unknown'}`,
-    `Group Chat: ${ctx.isGroup ? 'yes' : 'no'}`,
-    ctx.snsNickname ? `Nickname: ${ctx.snsNickname}` : '',
-    ctx.sender_phone ? `Sender Phone: ${ctx.sender_phone}` : '',
-    ctx.receiver_phone ? `Receiver Phone: ${ctx.receiver_phone}` : '',
+    ...buildContextHeader(ctx, { includePhones: true }),
     '',
     'Recent messages:',
     ...lines,
     '',
-    'Return only the suggested reply text.',
+    buildOutputContract({ mode: 'ask', outputMode }),
   ].filter(Boolean).join('\n');
 }
 
@@ -95,17 +157,16 @@ export function buildPromptText({ chat, messages, systemPrompt, meId }) {
  * @param {Array}  args.messages
  * @param {string} [args.systemPrompt]
  * @param {string} [args.meId]
+ * @param {string} [args.outputMode]
  */
-export function buildPolishPromptText({ draft, chat, messages, systemPrompt, meId }) {
+export function buildPolishPromptText({ draft, chat, messages, systemPrompt, meId, outputMode }) {
   const ctx = buildChatContext({ chat, messages, meId });
   const lines = ctx.messages.map((item) => `${item.role === 'customer' ? 'Customer' : 'Me'}: ${item.content}`);
   return [
     systemPrompt
       || 'You are a professional writing assistant. Polish the user draft so it is clearer, more natural, and more professional, while keeping the original intent and language.',
     '',
-    `Chat ID: ${ctx.chatId || 'unknown'}`,
-    `Group Chat: ${ctx.isGroup ? 'yes' : 'no'}`,
-    ctx.snsNickname ? `Nickname: ${ctx.snsNickname}` : '',
+    ...buildContextHeader(ctx, { includePhones: false }),
     '',
     'Recent messages (for tone/context only):',
     ...lines,
@@ -113,6 +174,6 @@ export function buildPolishPromptText({ draft, chat, messages, systemPrompt, meI
     'User draft to polish:',
     draft || '',
     '',
-    'Return only the polished text. Do not add explanations, quotes, or extra notes.',
+    buildOutputContract({ mode: 'polish', outputMode }),
   ].filter(Boolean).join('\n');
 }

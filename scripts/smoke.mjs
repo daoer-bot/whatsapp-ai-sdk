@@ -113,13 +113,34 @@ try {
 console.log('[smoke] checking options page multi-provider wiring...');
 try {
   const optionsHtml = readFileSync(join(projectRoot, 'options.html'), 'utf8');
-  for (const marker of ['value="mock"', 'value="dify"', 'value="openai"', 'name="model"']) {
+  for (const marker of [
+    'value="mock"',
+    'value="dify"',
+    'value="openai"',
+    'name="model"',
+    'name="outputMode"',
+    'value="structured"',
+  ]) {
     if (optionsHtml.includes(marker)) ok(`options.html has ${marker}`);
     else fail(`options.html missing: ${marker}`);
   }
   const optionsJs = readFileSync(join(projectRoot, 'dist/options.js'), 'utf8');
   if (optionsJs.includes('model')) ok('options.js persists model field');
   else fail('options.js missing model field wiring');
+  if (optionsJs.includes('outputMode')) ok('options.js persists outputMode field');
+  else fail('options.js missing outputMode field wiring');
+  const drawer = readFileSync(join(projectRoot, 'src/content/settings-drawer.js'), 'utf8');
+  if (drawer.includes('name="outputMode"') && drawer.includes('outputMode')) {
+    ok('settings-drawer wires outputMode');
+  } else {
+    fail('settings-drawer missing outputMode');
+  }
+  const promptBuilder = readFileSync(join(projectRoot, 'src/core/prompt-builder.js'), 'utf8');
+  if (promptBuilder.includes('buildOutputContract') && promptBuilder.includes('Output contract')) {
+    ok('prompt-builder appends output contract by mode');
+  } else {
+    fail('prompt-builder missing output contract helper');
+  }
 } catch (e) {
   fail(`options multi-provider check: ${e.message}`);
 }

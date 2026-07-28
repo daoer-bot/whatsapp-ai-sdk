@@ -201,6 +201,9 @@ function fillForm(root, config) {
   form.baseUrl.value = config.baseUrl || '';
   form.apiKey.value = config.apiKey || '';
   form.model.value = config.model || '';
+  if (form.outputMode) {
+    form.outputMode.value = config.outputMode === 'structured' ? 'structured' : 'text';
+  }
   form.prompt.value = config.prompt || '';
   form.polishPrompt.value = config.polishPrompt || '';
   form.debug.checked = config.debug === true;
@@ -213,6 +216,7 @@ function readForm(root) {
     baseUrl: form.baseUrl.value.trim(),
     apiKey: form.apiKey.value.trim(),
     model: form.model.value.trim(),
+    outputMode: form.outputMode ? form.outputMode.value : 'text',
     prompt: form.prompt.value.trim(),
     polishPrompt: form.polishPrompt.value.trim(),
     debug: form.debug.checked === true,
@@ -258,12 +262,20 @@ function buildRoot() {
             <div class="waai-hint">仅 openai 需要；留空默认 gpt-4o-mini。</div>
           </div>
           <div class="waai-field">
-            <label for="waai-prompt">回复 Prompt</label>
-            <textarea id="waai-prompt" name="prompt" placeholder="生成回复时的系统提示"></textarea>
+            <label for="waai-outputMode">输出模式</label>
+            <select id="waai-outputMode" name="outputMode">
+              <option value="text">text · 纯文本（只写输入框）</option>
+              <option value="structured">structured · 结构化（解释面板）</option>
+            </select>
+            <div class="waai-hint">人设 Prompt 只管口吻；JSON 契约由扩展按模式自动追加。</div>
           </div>
           <div class="waai-field">
-            <label for="waai-polishPrompt">润色 Prompt</label>
-            <textarea id="waai-polishPrompt" name="polishPrompt" placeholder="润色草稿时的系统提示"></textarea>
+            <label for="waai-prompt">回复 Prompt（人设）</label>
+            <textarea id="waai-prompt" name="prompt" placeholder="生成回复时的角色与口吻"></textarea>
+          </div>
+          <div class="waai-field">
+            <label for="waai-polishPrompt">润色 Prompt（人设）</label>
+            <textarea id="waai-polishPrompt" name="polishPrompt" placeholder="润色草稿时的角色与口吻"></textarea>
           </div>
           <div class="waai-field">
             <label class="waai-check">

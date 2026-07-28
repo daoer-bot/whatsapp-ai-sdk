@@ -59,6 +59,8 @@ Optional source MP4: [demo-usage.mp4](docs/assets/demo-usage.mp4). More assets: 
   - `mock` — local demo, no network (default)
   - `dify` — Dify Chat Messages API
   - `openai` — OpenAI-compatible Chat Completions (including many gateways)
+  - **`outputMode`**: `text` (default, fill composer only) / `structured` (JSON + explain panel); persona prompts stay free-form, serialization contract is appended by code
+
 - Types: [`types/whatsapp-ai-sdk.d.ts`](types/whatsapp-ai-sdk.d.ts)
 - Docs: [API](docs/API.md) · [Architecture](docs/ARCHITECTURE.md) · [Compatibility](docs/COMPATIBILITY.md) · [Threat model](docs/THREAT_MODEL.md) · [Selector checklist](docs/SELECTOR_CHECKLIST.md)
 

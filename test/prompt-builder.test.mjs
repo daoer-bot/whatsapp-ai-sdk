@@ -4,7 +4,9 @@ import {
   buildChatContext,
   buildPromptText,
   buildPolishPromptText,
+  buildOutputContract,
 } from '../src/core/prompt-builder.js';
+import { normalizeOutputMode } from '../src/core/ai-config.js';
 
 test('buildChatContext drops empty content and caps limit', () => {
   const context = buildChatContext({
@@ -77,7 +79,7 @@ test('buildPolishPromptText keeps draft and polish instructions', () => {
   assert.match(text, /pls check asap/);
   assert.match(text, /Polish carefully\./);
   assert.match(text, /User draft to polish/);
-  assert.match(text, /Return only the polished text/);
+  assert.match(text, /Return only the polished message text/);
 });
 
 test('buildPolishPromptText works with empty draft', () => {
@@ -87,4 +89,47 @@ test('buildPolishPromptText works with empty draft', () => {
     messages: [],
   });
   assert.match(text, /User draft to polish/);
+});
+
+test('normalizeOutputMode defaults to text and accepts structured aliases', () => {
+  assert.equal(normalizeOutputMode(undefined), 'text');
+  assert.equal(normalizeOutputMode('TEXT'), 'text');
+  assert.equal(normalizeOutputMode('structured'), 'structured');
+  assert.equal(normalizeOutputMode('json'), 'structured');
+  assert.equal(normalizeOutputMode('panel'), 'structured');
+});
+
+test('buildOutputContract text vs structured', () => {
+  const textAsk = buildOutputContract({ mode: 'ask', outputMode: 'text' });
+  assert.match(textAsk, /Return only the suggested reply text/);
+  assert.doesNotMatch(textAsk, /话术建议/);
+
+  const structured = buildOutputContract({ mode: 'ask', outputMode: 'structured' });
+  assert.match(structured, /话术建议/);
+  assert.match(structured, /JSON object/);
+  assert.match(structured, /解释/);
+});
+
+test('buildPromptText structured mode appends JSON contract without user writing schema', () => {
+  const text = buildPromptText({
+    chat: { snsId: 'c1' },
+    messages: [{ body: 'hi', send_type: 2 }],
+    systemPrompt: 'Be a friendly agent.',
+    outputMode: 'structured',
+  });
+  assert.match(text, /Be a friendly agent\./);
+  assert.match(text, /Output contract/);
+  assert.match(text, /话术建议/);
+  assert.doesNotMatch(text, /Return only the suggested reply text/);
+});
+
+test('buildPolishPromptText text mode forbids JSON', () => {
+  const text = buildPolishPromptText({
+    draft: 'hello',
+    chat: {},
+    messages: [],
+    outputMode: 'text',
+  });
+  assert.match(text, /Return only the polished message text/);
+  assert.doesNotMatch(text, /话术建议/);
 });

@@ -70,19 +70,45 @@ test('generateReply mock ask and polish modes work offline', async () => {
   const ask = await generateReply({
     chat: { snsId: '123' },
     messages: [{ body: 'price?', send_type: 2 }],
-    config: { provider: 'mock' },
+    config: { provider: 'mock', outputMode: 'text' },
     mode: 'ask',
   });
   assert.match(ask.suggestion, /price\?/);
+  assert.equal(ask.summary, '');
+  assert.equal(ask.explanation, '');
 
   const polish = await generateReply({
     chat: { snsId: '123' },
     messages: [],
-    config: { provider: 'mock' },
+    config: { provider: 'mock', outputMode: 'text' },
     mode: 'polish',
     draft: 'hello customer',
   });
   assert.match(polish.suggestion, /Hello customer/);
+  assert.equal(polish.summary, '');
+});
+
+test('generateReply mock structured mode fills explain fields', async () => {
+  const ask = await generateReply({
+    chat: { snsId: '123' },
+    messages: [{ body: 'hello', send_type: 2 }],
+    config: { provider: 'mock', outputMode: 'structured' },
+    mode: 'ask',
+  });
+  assert.ok(ask.suggestion);
+  assert.ok(ask.summary);
+  assert.ok(ask.explanation);
+
+  const polish = await generateReply({
+    chat: { snsId: '123' },
+    messages: [],
+    config: { provider: 'mock', outputMode: 'structured' },
+    mode: 'polish',
+    draft: 'hello customer',
+  });
+  assert.ok(polish.suggestion);
+  assert.ok(polish.summary);
+  assert.ok(polish.explanation);
 });
 
 test('generateReply rejects unknown provider', async () => {

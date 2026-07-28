@@ -19,6 +19,9 @@ function fillForm(config) {
   if (form.model) {
     form.model.value = config.model || '';
   }
+  if (form.outputMode) {
+    form.outputMode.value = config.outputMode === 'structured' ? 'structured' : 'text';
+  }
   form.prompt.value = config.prompt || '';
   if (form.polishPrompt) {
     form.polishPrompt.value = config.polishPrompt || '';
@@ -48,6 +51,7 @@ form.addEventListener('submit', async (event) => {
       baseUrl: form.baseUrl.value.trim(),
       apiKey: form.apiKey.value.trim(),
       model: form.model ? form.model.value.trim() : '',
+      outputMode: form.outputMode ? form.outputMode.value : 'text',
       prompt: form.prompt.value.trim(),
       polishPrompt: form.polishPrompt ? form.polishPrompt.value.trim() : '',
       debug: form.debug ? form.debug.checked : false,

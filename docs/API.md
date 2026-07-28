@@ -96,7 +96,28 @@ AI 入口行为：
 | `mock` | 本地演示，不发网络请求（默认） | 无需填写 | — |
 | `dify` | Dify Chat Messages API | 填到 `/v1` 或完整 `/chat-messages` | API Key |
 | `openai` | OpenAI 兼容 Chat Completions | 填到 `/v1` 或完整 `/chat/completions` | API Key、Model（默认 `gpt-4o-mini`） |
+| `outputMode` | 输出模式 | — | `text`（默认）或 `structured` |
 | `debug` | 调试日志开关 | — | 默认关闭；开启后可能输出消息摘要 |
+
+### 输出模式（outputMode）
+
+人设 Prompt（`prompt` / `polishPrompt`）只描述「怎么说话」。**序列化契约由扩展按 `outputMode` 自动追加**，避免改 Prompt 时踩碎解析与解释面板。
+
+| 模式 | 模型应返回 | 写入输入框 | 解释面板 |
+| --- | --- | --- | --- |
+| `text`（默认） | 纯文本一句 | 整段作为 suggestion | 通常不展示（无总结/解释字段） |
+| `structured` | 仅一个 JSON 对象 | `话术建议` / `suggestion` | `解释`、`总结`、`原文翻译` 等 |
+
+structured 约定字段（中英别名均可）：
+
+```json
+{
+  "话术建议": "要写入输入框的回复或润色结果",
+  "解释": "简要理由",
+  "总结": "一行背景",
+  "原文翻译": "可选翻译，不需要则空字符串"
+}
+```
 
 URL 规则：
 

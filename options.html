@@ -125,13 +125,25 @@
           </div>
 
           <div class="field">
-            <label for="prompt">回复 Prompt</label>
-            <textarea id="prompt" name="prompt"></textarea>
-            <div class="hint">输入框为空、左键 ✦ 时使用：根据聊天历史生成回复。</div>
+            <label for="outputMode">输出模式</label>
+            <select id="outputMode" name="outputMode">
+              <option value="text">text · 纯文本（只写入输入框，默认）</option>
+              <option value="structured">structured · 结构化（JSON，解释面板）</option>
+            </select>
+            <div class="hint">
+              人设 Prompt 只管「怎么说话」。序列化契约由扩展按本选项自动追加，避免改 Prompt 时踩碎面板。
+              text：模型只回一句可发送文本。structured：要求 JSON（话术建议/解释/总结/翻译），才会完整展示解释面板。
+            </div>
           </div>
 
           <div class="field">
-            <label for="polishPrompt">润色 Prompt</label>
+            <label for="prompt">回复 Prompt（人设）</label>
+            <textarea id="prompt" name="prompt"></textarea>
+            <div class="hint">输入框为空、左键 ✦ 时使用。只写角色与口吻即可，不必手写 JSON 格式。</div>
+          </div>
+
+          <div class="field">
+            <label for="polishPrompt">润色 Prompt（人设）</label>
             <textarea id="polishPrompt" name="polishPrompt"></textarea>
             <div class="hint">输入框已有草稿、左键 ✦ 时使用。留空则回退到回复 Prompt。</div>
           </div>

@@ -20,7 +20,9 @@
  */
 
 import { buildChatContext, buildPromptText, buildPolishPromptText } from './prompt-builder.js';
+import { normalizeOutputMode, OUTPUT_MODE_STRUCTURED } from './ai-config.js';
 import { debugLog } from './logger.js';
+
 
 /** openai provider 未配置 model 时的默认值 */
 export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
@@ -46,22 +48,34 @@ function makeResult({ suggestion = '', explanation = '', summary = '', translati
   };
 }
 
-function buildMockReply({ chat, messages }) {
+function buildMockReply({ chat, messages, outputMode }) {
   const latest = lastCustomerMessage(messages).trim();
   const suggestion = !latest
     ? 'Thanks for your message. I will review it and get back to you shortly.'
     : ('Thanks for your message. Regarding "' + latest.slice(0, 80) + (latest.length > 80 ? '...' : '') + '", I will check the details and reply to you shortly.');
 
+  const mode = normalizeOutputMode(outputMode);
+  if (mode === OUTPUT_MODE_STRUCTURED) {
+    return makeResult({
+      suggestion,
+      summary: '基于最近客户消息生成跟进回复。',
+      explanation: '保持礼貌、简洁，先确认收到并给出下一步动作。',
+      translation: '感谢您的消息。关于您提到的内容，我会尽快核实并回复。',
+      raw: suggestion,
+    });
+  }
+
+  // text：只演示写入输入框；不塞解释面板字段
   return makeResult({
     suggestion,
-    summary: '基于最近客户消息生成跟进回复。',
-    explanation: '保持礼貌、简洁，先确认收到并给出下一步动作。',
-    translation: '感谢您的消息。关于您提到的内容，我会尽快核实并回复。',
+    summary: '',
+    explanation: '',
+    translation: '',
     raw: suggestion,
   });
 }
 
-function buildMockPolish({ draft }) {
+function buildMockPolish({ draft, outputMode }) {
   const text = (draft || '').trim();
   let suggestion;
   if (!text) {
@@ -77,10 +91,21 @@ function buildMockPolish({ draft }) {
     }
   }
 
+  const mode = normalizeOutputMode(outputMode);
+  if (mode === OUTPUT_MODE_STRUCTURED) {
+    return makeResult({
+      suggestion,
+      summary: '对你当前草稿做了措辞润色。',
+      explanation: '保留原意，让表达更清晰、更专业。',
+      translation: '',
+      raw: suggestion,
+    });
+  }
+
   return makeResult({
     suggestion,
-    summary: '对你当前草稿做了措辞润色。',
-    explanation: '保留原意，让表达更清晰、更专业。',
+    summary: '',
+    explanation: '',
     translation: '',
     raw: suggestion,
   });
@@ -237,6 +262,7 @@ export function parseAiAnswer(answer) {
 }
 
 function buildRequestPrompt({ chat, messages, config, meId, mode, draft }) {
+  const outputMode = normalizeOutputMode(config?.outputMode);
   if (mode === 'polish') {
     return buildPolishPromptText({
       draft,
@@ -244,6 +270,7 @@ function buildRequestPrompt({ chat, messages, config, meId, mode, draft }) {
       messages,
       systemPrompt: config?.polishPrompt || config?.prompt,
       meId,
+      outputMode,
     });
   }
   return buildPromptText({
@@ -251,6 +278,7 @@ function buildRequestPrompt({ chat, messages, config, meId, mode, draft }) {
     messages,
     systemPrompt: config?.prompt,
     meId,
+    outputMode,
   });
 }
 
@@ -319,6 +347,7 @@ async function createDifyResponse({ chat, messages, config, responseMode, meId, 
         receiver_phone: receiverPhone,
         mode: mode || 'ask',
         draft: draft || '',
+        output_mode: normalizeOutputMode(config?.outputMode),
       },
       response_mode: responseMode,
       user: senderPhone || chat?.snsId || chat?.groupId || 'whatsapp-user',
@@ -687,12 +716,13 @@ async function requestOpenAIStream({ chat, messages, config, onChunk, meId, mode
 export async function generateReply({ chat, messages, config = {}, meId, mode = 'ask', draft = '' }) {
   const provider = config.provider || 'mock';
   const resolvedMode = mode === 'polish' ? 'polish' : 'ask';
+  const outputMode = normalizeOutputMode(config.outputMode);
 
   if (provider === 'mock') {
     if (resolvedMode === 'polish') {
-      return buildMockPolish({ draft });
+      return buildMockPolish({ draft, outputMode });
     }
-    return buildMockReply({ chat, messages });
+    return buildMockReply({ chat, messages, outputMode });
   }
 
   if (provider === 'dify') {
@@ -728,11 +758,12 @@ async function emitChunk(onChunk, delta, fullText) {
 export async function streamReply({ chat, messages, config = {}, onChunk, meId, mode = 'ask', draft = '' }) {
   const provider = config.provider || 'mock';
   const resolvedMode = mode === 'polish' ? 'polish' : 'ask';
+  const outputMode = normalizeOutputMode(config.outputMode);
 
   if (provider === 'mock') {
     const result = resolvedMode === 'polish'
-      ? buildMockPolish({ draft })
-      : buildMockReply({ chat, messages });
+      ? buildMockPolish({ draft, outputMode })
+      : buildMockReply({ chat, messages, outputMode });
     if (result.suggestion) await emitChunk(onChunk, result.suggestion, result.suggestion);
     return result;
   }
