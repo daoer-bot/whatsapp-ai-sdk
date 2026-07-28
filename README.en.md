@@ -12,6 +12,8 @@ Unofficial **Chromium Manifest V3 browser extension** for WhatsApp Web: read the
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
 
+![Hero banner](docs/assets/hero-banner.svg)
+
 ## Why this project is interesting
 
 | Hard problem | Approach in this repo |
@@ -21,19 +23,27 @@ Unofficial **Chromium Manifest V3 browser extension** for WhatsApp Web: read the
 | Lexical composer easily double-inserts text | Single-write path, WPP `setTextContent` when available, verification |
 | Shipping AI without leaking chats by default | Default **`mock`** provider; no bundled keys or remote endpoints |
 
+### Architecture (SVG)
+
+![Architecture](docs/assets/architecture.svg)
+
+### UI mock (SVG, not official branding)
+
+![UI mock](docs/assets/ui-mock.svg)
+
 ## Demo
 
-~38s walkthrough: **✦** beside the composer → suggestion → explain panel (demo chat, not a real customer).
+~38s real recording: **✦** beside the composer → suggestion → explain panel (demo chat, not a real customer).
 
 https://github.com/daoer-bot/whatsapp-ai-sdk/raw/main/docs/assets/demo-usage.mp4
 
 [![Demo poster: AI entry and chat](docs/assets/demo-poster.jpg)](docs/assets/demo-usage.mp4)
 
-| AI entry (✦ by composer) | Explain panel |
+| Live: AI entry | Live: explain panel |
 | --- | --- |
 | ![AI entry](docs/assets/hero-ai-button.jpg) | ![Explain panel](docs/assets/demo-frame-mid.jpg) |
 
-Assets notes: [`docs/assets/`](docs/assets/README.md). If the video does not inline on GitHub, open [demo-usage.mp4](docs/assets/demo-usage.mp4).
+Vector + recording notes: [`docs/assets/`](docs/assets/README.md). If the video does not inline on GitHub, open [demo-usage.mp4](docs/assets/demo-usage.mp4).
 
 ## Features
 

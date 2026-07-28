@@ -154,6 +154,9 @@ for (const rel of [
   'docs/THREAT_MODEL.md',
   'docs/SELECTOR_CHECKLIST.md',
   'docs/assets/README.md',
+  'docs/assets/hero-banner.svg',
+  'docs/assets/architecture.svg',
+  'docs/assets/ui-mock.svg',
   'docs/assets/demo-usage.mp4',
   'docs/assets/demo-poster.jpg',
   'docs/assets/hero-ai-button.jpg',
@@ -173,6 +176,11 @@ try {
     ok('README embeds demo video assets');
   } else {
     fail('README missing demo-usage.mp4 / demo-poster.jpg references');
+  }
+  if (/architecture\.svg/.test(readme) && /ui-mock\.svg/.test(readme) && /hero-banner\.svg/.test(readme)) {
+    ok('README embeds architecture/ui/hero SVGs');
+  } else {
+    fail('README missing SVG portfolio figures');
   }
 } catch (e) {
   fail(`README demo asset check: ${e.message}`);

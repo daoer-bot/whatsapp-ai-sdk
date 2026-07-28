@@ -8,7 +8,8 @@
 - 新增英文 README：`README.en.md`
 - 新增 [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) 威胁模型摘要
 - 新增 [docs/SELECTOR_CHECKLIST.md](docs/SELECTOR_CHECKLIST.md) 选择器 / 注入人工回归清单
-- 新增 [docs/assets/](docs/assets/README.md)：演示视频 `demo-usage.mp4`、封面与关键帧截图
+- 新增 [docs/assets/](docs/assets/README.md)：Hero / 架构 / UI 示意 SVG，以及演示视频与真机截图
+- README（中/英）优先展示矢量图，真机录屏作辅证
 - 新增 [docs/RELEASE_v0.1.2.md](docs/RELEASE_v0.1.2.md) 发布说明模板
 - README（中/英）增加演示区与「30 秒看懂」表、架构示意、文档索引；SECURITY 链到威胁模型
 - `package.json` 补充 `private`、`author`、扩展向 keywords 与描述

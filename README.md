@@ -12,6 +12,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
 
+![Hero banner](docs/assets/hero-banner.svg)
+
 ## 30 秒看懂
 
 | 难点 | 本项目做法 |
@@ -21,29 +23,27 @@
 | Lexical 输入框易叠字 | 单次写入、可用时走 WPP `setTextContent`、回填校验 |
 | AI 默认不外泄聊天 | 默认 **`mock`**，不内置 key / 远程地址 |
 
-```text
-┌──────────────────────────── WhatsApp Web 页面 ────────────────────────────┐
-│  isolated world (content.js)          page world (inject.js + wpp.js)     │
-│  ┌─────────────────────┐   postMessage RPC   ┌─────────────────────────┐  │
-│  │ ✦ 入口 / 页内设置抽屉 │ ◄────────────────► │ window.WhatsappAI 数据面 │  │
-│  │ mock/dify/openai      │                     │ WPP → React → DOM 降级  │  │
-│  └─────────────────────┘                     └─────────────────────────┘  │
-└───────────────────────────────────────────────────────────────────────────┘
-```
+### 架构（SVG）
+
+![Architecture](docs/assets/architecture.svg)
+
+### UI 示意（SVG，非官方视觉）
+
+![UI mock](docs/assets/ui-mock.svg)
 
 ## 演示
 
-约 38 秒：输入框旁 **✦** → 生成建议 → 解释面板（演示会话，非真实客户）。
+约 38 秒真机录屏：输入框旁 **✦** → 生成建议 → 解释面板（演示会话，非真实客户）。
 
 https://github.com/daoer-bot/whatsapp-ai-sdk/raw/main/docs/assets/demo-usage.mp4
 
 [![演示封面：AI 入口与会话](docs/assets/demo-poster.jpg)](docs/assets/demo-usage.mp4)
 
-| AI 入口（输入框旁 ✦） | 解释面板（建议 / 翻译） |
+| 真机：AI 入口 | 真机：解释面板 |
 | --- | --- |
 | ![AI 入口](docs/assets/hero-ai-button.jpg) | ![解释面板](docs/assets/demo-frame-mid.jpg) |
 
-资源说明见 [`docs/assets/`](docs/assets/README.md)。若 GitHub 网页未内嵌播放，点击封面或 [demo-usage.mp4](docs/assets/demo-usage.mp4) 下载/打开。
+矢量图 + 录屏资源见 [`docs/assets/`](docs/assets/README.md)。GitHub 若未内嵌播放，点封面或 [demo-usage.mp4](docs/assets/demo-usage.mp4)。
 
 ## 能力概览
 

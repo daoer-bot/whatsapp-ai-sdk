@@ -4,6 +4,10 @@
 
 相关文档：[API](./API.md) · [兼容性](./COMPATIBILITY.md) · [威胁模型](./THREAT_MODEL.md) · [选择器回归清单](./SELECTOR_CHECKLIST.md)
 
+架构示意（SVG）：
+
+![Architecture](./assets/architecture.svg)
+
 ## 为什么需要 page world 注入
 
 Chrome 扩展的 content script 运行在 **isolated world**：能访问 DOM，但**看不到**页面自己的 `window` 全局变量（例如 `window.WPP`、React fiber 内部属性）。
