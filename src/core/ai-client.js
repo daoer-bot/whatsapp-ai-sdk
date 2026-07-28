@@ -63,12 +63,19 @@ function buildMockReply({ chat, messages }) {
 
 function buildMockPolish({ draft }) {
   const text = (draft || '').trim();
-  const suggestion = !text
-    ? 'Thanks for your message. I will get back to you shortly.'
-    : text
+  let suggestion;
+  if (!text) {
+    suggestion = 'Thanks for your message. I will get back to you shortly.';
+  } else {
+    // 必须与原稿有可感知差异，否则本地 mock 测「润色是否写回输入框」会误判为没更新
+    suggestion = text
       .replace(/\s+/g, ' ')
       .replace(/^(.)/, (m) => m.toUpperCase())
       .replace(/([^.!?])$/, '$1.');
+    if (suggestion === text) {
+      suggestion = suggestion.replace(/[。.!?]?$/, '') + ' — polished.';
+    }
+  }
 
   return makeResult({
     suggestion,
@@ -405,7 +412,7 @@ async function requestDifyStream({ chat, messages, config, onChunk, meId, mode, 
     const data = await response.json();
     const text = extractDifyText(data);
     const parsed = parseAiAnswer(text);
-    if (parsed.suggestion) onChunk?.(parsed.suggestion, parsed.suggestion);
+    if (parsed.suggestion) await emitChunk(onChunk, parsed.suggestion, parsed.suggestion);
     return parsed;
   }
 
@@ -601,7 +608,7 @@ async function requestOpenAIStream({ chat, messages, config, onChunk, meId, mode
     const data = await response.json();
     const text = extractOpenAIText(data);
     const parsed = parseAiAnswer(text);
-    if (parsed.suggestion) onChunk?.(parsed.suggestion, parsed.suggestion);
+    if (parsed.suggestion) await emitChunk(onChunk, parsed.suggestion, parsed.suggestion);
     return parsed;
   }
 
@@ -700,8 +707,23 @@ export async function generateReply({ chat, messages, config = {}, meId, mode = 
 }
 
 /**
+ * 安全调用 onChunk：content 侧可能 async fillInput，必须等它结束再继续，
+ * 否则会与最终回填并行，叠在 Lexical 输入框里。
+ */
+async function emitChunk(onChunk, delta, fullText) {
+  if (typeof onChunk !== 'function') return;
+  try {
+    await onChunk(delta, fullText);
+  } catch {
+    // ignore consumer errors
+  }
+}
+
+/**
  * 默认走 blocking：结构化 JSON 通常要等整段结束才能解析；
  * 用户体感更像“干等”。仅当 config.stream === true 时使用 SSE 流式。
+ *
+ * 注意：无论 blocking 还是 stream，onChunk 都会被 await，避免与最终 fill 竞态。
  */
 export async function streamReply({ chat, messages, config = {}, onChunk, meId, mode = 'ask', draft = '' }) {
   const provider = config.provider || 'mock';
@@ -711,7 +733,7 @@ export async function streamReply({ chat, messages, config = {}, onChunk, meId, 
     const result = resolvedMode === 'polish'
       ? buildMockPolish({ draft })
       : buildMockReply({ chat, messages });
-    if (result.suggestion) onChunk?.(result.suggestion, result.suggestion);
+    if (result.suggestion) await emitChunk(onChunk, result.suggestion, result.suggestion);
     return result;
   }
 
@@ -720,7 +742,7 @@ export async function streamReply({ chat, messages, config = {}, onChunk, meId, 
       return requestDifyStream({ chat, messages, config, onChunk, meId, mode: resolvedMode, draft });
     }
     const result = await requestDify({ chat, messages, config, meId, mode: resolvedMode, draft });
-    if (result?.suggestion) onChunk?.(result.suggestion, result.suggestion);
+    if (result?.suggestion) await emitChunk(onChunk, result.suggestion, result.suggestion);
     return result;
   }
 
@@ -729,7 +751,7 @@ export async function streamReply({ chat, messages, config = {}, onChunk, meId, 
       return requestOpenAIStream({ chat, messages, config, onChunk, meId, mode: resolvedMode, draft });
     }
     const result = await requestOpenAI({ chat, messages, config, meId, mode: resolvedMode, draft });
-    if (result?.suggestion) onChunk?.(result.suggestion, result.suggestion);
+    if (result?.suggestion) await emitChunk(onChunk, result.suggestion, result.suggestion);
     return result;
   }
 

@@ -2,6 +2,8 @@
 
 本文说明扩展在 WhatsApp Web 中的运行分层，以及 AI 请求路径。目标读者是想二次开发或排查注入问题的贡献者。
 
+相关文档：[API](./API.md) · [兼容性](./COMPATIBILITY.md) · [威胁模型](./THREAT_MODEL.md) · [选择器回归清单](./SELECTOR_CHECKLIST.md)
+
 ## 为什么需要 page world 注入
 
 Chrome 扩展的 content script 运行在 **isolated world**：能访问 DOM，但**看不到**页面自己的 `window` 全局变量（例如 `window.WPP`、React fiber 内部属性）。
@@ -21,8 +23,8 @@ Browser extension (project root)
 WhatsApp Web tab
 ├─ isolated world: content.js
 │    - 注入 wpp.js / inject.js
-│    - 创建 AI 按钮与解释面板
-│    - 读取 chrome.storage 中的 AI 配置
+│    - 极简 ✦ 入口（左键生成 / 右键设置）
+│    - 页内设置抽屉 + 解释面板（与 options.html 共享 storage）
 │    - 调用 mock / dify / openai
 │    - 通过 RPC 让 page world 填入/发送
 │
@@ -51,7 +53,7 @@ composer（输入框写入、点击发送）始终依赖 DOM / Lexical 编辑器
 ## AI 路径
 
 ```text
-用户点击「帮我回复 / 帮我优化」
+用户点击输入框旁 ✦（空输入=回复，有草稿=润色；右键打开设置）
   → content.js 拉取当前 chat + messages（RPC）
   → loadAiConfig()（chrome.storage.local）
   → generateReply / streamReply

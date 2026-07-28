@@ -1,10 +1,12 @@
 /**
- * content/ai-button.js — 锚定到输入区旁的行内 AI 入口
+ * content/ai-button.js — 锚定到输入区旁的 AI 入口
  *
  * 设计原则：
- * - 优先锚定麦克风按钮所在横向 flex 行（多语言 aria-label + data-icon）
+ * - 优先锚定麦克风按钮所在横向 flex 行
  * - 失败则退到 `#main footer .copyable-area`
- * - 根据输入框是否已有内容，切换「帮我回复 / 帮我优化」模式
+ * - 可发现但不吵：紧凑色点 +「AI」微标，不是大绿文案胶囊，也不藏成灰图标
+ * - 左键触发 ask/polish；右键（或长按）打开页内设置抽屉
+ * - 回复 / 润色用色相区分，体量保持一致
  */
 
 import {
@@ -15,33 +17,48 @@ import {
 
 const WRAPPER_ID = 'waai-entry-wrapper';
 const BUTTON_ID = 'waai-entry-btn';
-const STYLE_ID = 'waai-entry-style';
+/** 升版清掉：大绿胶囊 / 纯 ghost 灰图标 / 白底描边 */
+const STYLE_ID = 'waai-entry-style-v5';
+const LEGACY_STYLE_IDS = [
+  'waai-entry-style',
+  'waai-entry-style-v3',
+  'waai-entry-style-v4',
+  'waai-dots',
+];
 
 /** @typedef {'ask' | 'polish'} AiButtonMode */
 
 const MODE_LABELS = {
   ask: {
-    title: '帮我回复',
-    text: '帮我回复',
-    loading: '生成中',
+    title: 'AI 回复 · 右键打开设置',
+    aria: 'AI 回复',
+    text: 'AI',
   },
   polish: {
-    title: '帮我优化',
-    text: '帮我优化',
-    loading: '优化中',
+    title: 'AI 润色 · 右键打开设置',
+    aria: 'AI 润色',
+    text: '润色',
   },
 };
 
-function ensureStyle() {
-  if (document.getElementById(STYLE_ID)) return;
+/** 实心 sparkle：白底色块上更干净 */
+const AI_ICON_SVG =
+  '<svg class="waai-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">'
+  + '<path d="M12 2.8 13.35 9.05 19.2 11.25 13.35 13.45 12 19.7 10.65 13.45 4.8 11.25 10.65 9.05 12 2.8Z" '
+  + 'fill="currentColor"/>'
+  + '<path d="M18.6 4.6 19.05 6.05 20.5 6.5 19.05 6.95 18.6 8.4 18.15 6.95 16.7 6.5 18.15 6.05 18.6 4.6Z" '
+  + 'fill="currentColor"/>'
+  + '</svg>';
 
-  const keyframesId = 'waai-dots';
-  if (!document.getElementById(keyframesId)) {
-    const kf = document.createElement('style');
-    kf.id = keyframesId;
-    kf.textContent = `@keyframes waai-pulse{0%,100%{opacity:.35}50%{opacity:1}}`;
-    document.documentElement.appendChild(kf);
+function purgeLegacyStyles() {
+  for (const id of LEGACY_STYLE_IDS) {
+    document.getElementById(id)?.remove();
   }
+}
+
+function ensureStyle() {
+  purgeLegacyStyles();
+  if (document.getElementById(STYLE_ID)) return;
 
   const style = document.createElement('style');
   style.id = STYLE_ID;
@@ -50,125 +67,195 @@ function ensureStyle() {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-right: 8px;
+      margin: 0 4px 0 2px;
       flex-shrink: 0;
       order: 0;
     }
 
     #${BUTTON_ID} {
+      /* 可发现色点：WA 品牌绿，但体量是小 pill，不是「帮我回复」广告条 */
+      --waai-bg: #00a884;
+      --waai-bg-hover: #019a78;
+      --waai-bg-active: #028a6c;
+      --waai-fg: #ffffff;
+      --waai-ring: rgba(0, 168, 132, 0.35);
+      --waai-shadow: 0 1px 2px rgba(11, 20, 26, 0.12);
+      position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      height: 30px;
-      min-height: 30px;
-      padding: 0 12px;
-      border: none;
+      gap: 4px;
+      height: 28px;
+      min-height: 28px;
+      min-width: 28px;
+      padding: 0 9px 0 8px;
+      margin: 0;
+      border: 0;
       border-radius: 9999px;
       cursor: pointer;
       outline: none;
-      transition: background .15s ease, box-shadow .15s ease, transform .1s ease, color .15s ease, filter .15s ease;
+      background: var(--waai-bg);
+      color: var(--waai-fg);
+      box-shadow: var(--waai-shadow);
       box-sizing: border-box;
       flex-shrink: 0;
-      font-size: 12px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 11px;
       font-weight: 700;
+      letter-spacing: 0.02em;
       line-height: 1;
       white-space: nowrap;
-      letter-spacing: 0;
-      box-shadow: 0 1px 2px rgba(11,20,26,.08);
+      transition:
+        background .14s ease,
+        box-shadow .14s ease,
+        transform .1s ease,
+        filter .14s ease;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* 帮我回复：绿色主行动，贴近 WhatsApp 发送色 */
-    #${BUTTON_ID}[data-mode="ask"] {
-      background: linear-gradient(180deg, #25d366 0%, #1da851 100%);
-      color: #fff;
-    }
-
-    #${BUTTON_ID}[data-mode="ask"]:hover {
-      background: linear-gradient(180deg, #2fe074 0%, #22b85a 100%);
-      box-shadow: 0 2px 8px rgba(37,211,102,.35);
-      filter: brightness(1.02);
-    }
-
-    /* 帮我优化：蓝色次行动，区分润色场景 */
-    #${BUTTON_ID}[data-mode="polish"] {
-      background: linear-gradient(180deg, #2f9bff 0%, #0b7dff 100%);
-      color: #fff;
-    }
-
-    #${BUTTON_ID}[data-mode="polish"]:hover {
-      background: linear-gradient(180deg, #4dabff 0%, #1a89ff 100%);
-      box-shadow: 0 2px 8px rgba(11,125,255,.35);
-      filter: brightness(1.02);
+    #${BUTTON_ID}:hover {
+      background: var(--waai-bg-hover);
+      box-shadow: 0 2px 6px rgba(0, 168, 132, 0.28);
     }
 
     #${BUTTON_ID}:active {
       transform: scale(.97);
-      filter: brightness(.98);
+      background: var(--waai-bg-active);
+      box-shadow: 0 1px 2px rgba(11, 20, 26, 0.1);
     }
 
-    #${BUTTON_ID} span {
+    #${BUTTON_ID}:focus-visible {
+      box-shadow: 0 0 0 3px var(--waai-ring);
+    }
+
+    /* 润色：同体量，换蓝相 */
+    #${BUTTON_ID}[data-mode="polish"] {
+      --waai-bg: #5271ff;
+      --waai-bg-hover: #3f5ff0;
+      --waai-bg-active: #3552d6;
+      --waai-ring: rgba(82, 113, 255, 0.35);
+    }
+
+    #${BUTTON_ID}[data-mode="polish"]:hover {
+      box-shadow: 0 2px 6px rgba(82, 113, 255, 0.28);
+    }
+
+    #${BUTTON_ID} .waai-icon {
       display: block;
-      transform: translateY(-.5px);
+      pointer-events: none;
+      flex-shrink: 0;
     }
 
-    #${BUTTON_ID}.xm-loading {
+    #${BUTTON_ID} .waai-label {
+      display: block;
+      pointer-events: none;
+      transform: translateY(0.3px);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #${BUTTON_ID} .waai-spinner {
+      display: none;
+      width: 12px;
+      height: 12px;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: waai-spin .65s linear infinite;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    #${BUTTON_ID}.is-loading {
       cursor: wait;
       pointer-events: none;
-      box-shadow: none;
       filter: none;
+      box-shadow: none;
+      opacity: .88;
     }
 
-    #${BUTTON_ID}[data-mode="ask"].xm-loading {
-      background: rgba(37,211,102,.16);
-      color: #128c7e;
-    }
-
-    #${BUTTON_ID}[data-mode="polish"].xm-loading {
-      background: rgba(11,125,255,.14);
-      color: #0b7dff;
-    }
-
-    /* spinner 需要覆盖掉上面 span 的 display:block + transform */
-    #${BUTTON_ID} .xm-spinner {
+    #${BUTTON_ID}.is-loading .waai-icon,
+    #${BUTTON_ID}.is-loading .waai-label {
       display: none;
-      width: 13px;
-      height: 13px;
-      border: 2px solid rgba(255,255,255,.35);
-      border-top-color: currentColor;
-      border-radius: 50%;
-      animation: waai-spin .6s linear infinite;
-      flex-shrink: 0;
-      transform: none !important;
     }
 
-    #${BUTTON_ID}.xm-loading .xm-spinner {
-      display: inline-block !important;
-      border-color: rgba(18,140,126,.25);
-      border-top-color: currentColor;
+    #${BUTTON_ID}.is-loading .waai-spinner {
+      display: block;
     }
 
-    #${BUTTON_ID}[data-mode="polish"].xm-loading .xm-spinner {
-      border-color: rgba(11,125,255,.25);
-      border-top-color: currentColor;
-    }
-
-    #${BUTTON_ID}.xm-loading .xm-btn-text {
-      display: none !important;
-    }
-
-    #${BUTTON_ID}.xm-loading .xm-loading-text {
-      display: block !important;
-    }
-
-    #${BUTTON_ID} .xm-loading-text {
-      display: none;
+    /* 首次注入轻提示：两下呼吸，然后安静 */
+    #${BUTTON_ID}.waai-nudge {
+      animation: waai-nudge 1.4s ease-in-out 2;
     }
 
     @keyframes waai-spin {
       to { transform: rotate(360deg); }
     }
-    `;
+
+    @keyframes waai-nudge {
+      0%, 100% {
+        box-shadow: 0 1px 2px rgba(11, 20, 26, 0.12);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 5px rgba(0, 168, 132, 0.22);
+        transform: scale(1.04);
+      }
+    }
+
+    #${BUTTON_ID}[data-mode="polish"].waai-nudge {
+      animation-name: waai-nudge-polish;
+    }
+
+    @keyframes waai-nudge-polish {
+      0%, 100% {
+        box-shadow: 0 1px 2px rgba(11, 20, 26, 0.12);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 5px rgba(82, 113, 255, 0.22);
+        transform: scale(1.04);
+      }
+    }
+
+    /* 暗色：略提亮，避免在深灰 footer 里发闷 */
+    @media (prefers-color-scheme: dark) {
+      #${BUTTON_ID} {
+        --waai-bg: #00c49a;
+        --waai-bg-hover: #00d6a8;
+        --waai-bg-active: #00b38c;
+        --waai-ring: rgba(0, 196, 154, 0.4);
+        --waai-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+      }
+      #${BUTTON_ID}[data-mode="polish"] {
+        --waai-bg: #6b8cff;
+        --waai-bg-hover: #7d9bff;
+        --waai-bg-active: #5a7cf0;
+        --waai-ring: rgba(107, 140, 255, 0.4);
+      }
+    }
+
+    html[data-theme="dark"] #${BUTTON_ID},
+    body[data-theme="dark"] #${BUTTON_ID},
+    .dark #${BUTTON_ID},
+    [data-color-scheme="dark"] #${BUTTON_ID} {
+      --waai-bg: #00c49a;
+      --waai-bg-hover: #00d6a8;
+      --waai-bg-active: #00b38c;
+      --waai-ring: rgba(0, 196, 154, 0.4);
+      --waai-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    }
+
+    html[data-theme="dark"] #${BUTTON_ID}[data-mode="polish"],
+    body[data-theme="dark"] #${BUTTON_ID}[data-mode="polish"],
+    .dark #${BUTTON_ID}[data-mode="polish"],
+    [data-color-scheme="dark"] #${BUTTON_ID}[data-mode="polish"] {
+      --waai-bg: #6b8cff;
+      --waai-bg-hover: #7d9bff;
+      --waai-bg-active: #5a7cf0;
+      --waai-ring: rgba(107, 140, 255, 0.4);
+    }
+  `;
   document.documentElement.appendChild(style);
 }
 
@@ -183,11 +270,11 @@ function createButtonElement(mode = 'ask') {
   btn.dataset.mode = mode;
   btn.setAttribute('data-mode', mode);
   btn.title = labels.title;
-  btn.innerHTML = `
-    <span class="xm-spinner"></span>
-    <span class="xm-btn-text">${labels.text}</span>
-    <span class="xm-loading-text">${labels.loading}</span>
-  `;
+  btn.setAttribute('aria-label', labels.aria);
+  btn.innerHTML =
+    `${AI_ICON_SVG}`
+    + `<span class="waai-label">${labels.text}</span>`
+    + `<span class="waai-spinner" aria-hidden="true"></span>`;
 
   wrapper.appendChild(btn);
   return { wrapper, btn };
@@ -198,17 +285,14 @@ function applyModeToButton(btn, mode) {
   btn.dataset.mode = mode;
   btn.setAttribute('data-mode', mode);
   btn.title = labels.title;
-
-  const textEl = btn.querySelector('.xm-btn-text');
-  const loadingEl = btn.querySelector('.xm-loading-text');
-  if (textEl) textEl.textContent = labels.text;
-  if (loadingEl) loadingEl.textContent = labels.loading;
+  btn.setAttribute('aria-label', labels.aria);
+  const labelEl = btn.querySelector('.waai-label');
+  if (labelEl) labelEl.textContent = labels.text;
 }
 
 function findMicElement() {
   const hit = queryFirst(MIC_BUTTON_SELECTORS);
   if (!hit) return null;
-  // span[data-icon] → 找外层 button
   if (hit.tagName === 'BUTTON' || hit.getAttribute('role') === 'button') return hit;
   return hit.closest('button, [role="button"]') || hit;
 }
@@ -220,7 +304,6 @@ function findMicAnchorRow() {
   if (mic) {
     let node = mic.parentElement;
     let steps = 0;
-    // 动态向上找最近的横向 flex 行容器
     while (node && steps < 8) {
       const cs = getComputedStyle(node);
       if (cs.display.includes('flex') && (cs.flexDirection === 'row' || cs.flexDirection === 'row-reverse')) {
@@ -232,7 +315,6 @@ function findMicAnchorRow() {
     }
   }
 
-  // fallback：退回到 copyable-area，至少保证按钮可见
   if (!row) {
     row = document.querySelector(COPYABLE_AREA_SELECTOR);
   }
@@ -241,27 +323,54 @@ function findMicAnchorRow() {
   return { row, mic };
 }
 
-export function createAiButton({ onTrigger }) {
+function maybeNudge(btn) {
+  try {
+    if (sessionStorage.getItem('waai-entry-nudged') === '1') return;
+    sessionStorage.setItem('waai-entry-nudged', '1');
+  } catch {
+    // private mode 等：仍 nudge 一次，不持久
+  }
+  btn.classList.add('waai-nudge');
+  const clear = () => btn.classList.remove('waai-nudge');
+  btn.addEventListener('animationend', clear, { once: true });
+  // 兜底：动画异常时不让 class 常驻
+  window.setTimeout(clear, 3200);
+}
+
+/**
+ * @param {object} args
+ * @param {(mode: AiButtonMode) => void} args.onTrigger
+ * @param {() => void} [args.onOpenSettings]
+ */
+export function createAiButton({ onTrigger, onOpenSettings }) {
   let loading = false;
   /** @type {AiButtonMode} */
   let mode = 'ask';
+  /** @type {number | null} */
+  let longPressTimer = null;
+  let longPressOpened = false;
+
+  function clearLongPress() {
+    if (longPressTimer != null) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
 
   function setLoading(state) {
     loading = state;
     const btn = document.getElementById(BUTTON_ID);
     if (!btn) return;
-    if (state) btn.classList.add('xm-loading');
-    else btn.classList.remove('xm-loading');
+    btn.classList.toggle('is-loading', !!state);
+    btn.setAttribute('aria-busy', state ? 'true' : 'false');
   }
 
   /**
-   * 切换按钮文案/模式。
    * @param {AiButtonMode} nextMode
    */
   function setMode(nextMode) {
     const resolved = nextMode === 'polish' ? 'polish' : 'ask';
     if (mode === resolved) {
-      // 即使 mode 相同，也确保 DOM 文案正确（重建后可能丢失）
       const btn = document.getElementById(BUTTON_ID);
       if (btn && btn.dataset.mode !== resolved) {
         applyModeToButton(btn, resolved);
@@ -277,6 +386,10 @@ export function createAiButton({ onTrigger }) {
     return mode;
   }
 
+  function openSettings() {
+    if (typeof onOpenSettings === 'function') onOpenSettings();
+  }
+
   function inject() {
     if (document.getElementById(WRAPPER_ID)) return true;
 
@@ -288,12 +401,40 @@ export function createAiButton({ onTrigger }) {
     ensureStyle();
     const { wrapper, btn } = createButtonElement(mode);
 
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       if (loading) return;
+      // 长按已打开设置时，抬起触发的 click 要吞掉
+      if (longPressOpened) {
+        longPressOpened = false;
+        return;
+      }
       onTrigger(mode);
     });
 
-    // 优先放到麦克风左侧；如果行容器不直接包含麦克风 slot，则退到末尾
+    btn.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (loading) return;
+      openSettings();
+    });
+
+    // 触控：长按约 480ms 打开设置
+    btn.addEventListener('pointerdown', (event) => {
+      if (event.button != null && event.button !== 0) return;
+      longPressOpened = false;
+      clearLongPress();
+      longPressTimer = window.setTimeout(() => {
+        longPressTimer = null;
+        longPressOpened = true;
+        openSettings();
+      }, 480);
+    });
+    btn.addEventListener('pointerup', clearLongPress);
+    btn.addEventListener('pointercancel', clearLongPress);
+    btn.addEventListener('pointerleave', clearLongPress);
+
     const micSlot = mic?.parentElement;
     if (mic && micSlot && row.contains(micSlot)) {
       row.insertBefore(wrapper, micSlot);
@@ -301,10 +442,12 @@ export function createAiButton({ onTrigger }) {
       row.appendChild(wrapper);
     }
 
+    maybeNudge(btn);
     return true;
   }
 
   function uninject() {
+    clearLongPress();
     const wrapper = document.getElementById(WRAPPER_ID);
     if (wrapper) wrapper.remove();
   }

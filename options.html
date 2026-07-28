@@ -94,7 +94,7 @@
     <div class="page">
       <div class="card">
         <h1>AI 设置</h1>
-        <p>配置 AI 接口后，WhatsApp Web 中的 AI 按钮会使用这里的参数生成回复。</p>
+        <p>日常请在 WhatsApp 里对 ✦ 图标<strong>右键 / 长按</strong>打开页内设置。本页是备用完整表单，与页内抽屉读写同一套配置。</p>
 
         <form id="config-form">
           <div class="field">
@@ -125,15 +125,15 @@
           </div>
 
           <div class="field">
-            <label for="prompt">System Prompt（帮我回复）</label>
+            <label for="prompt">回复 Prompt</label>
             <textarea id="prompt" name="prompt"></textarea>
-            <div class="hint">输入框为空时使用：根据聊天历史生成回复。</div>
+            <div class="hint">输入框为空、左键 ✦ 时使用：根据聊天历史生成回复。</div>
           </div>
 
           <div class="field">
-            <label for="polishPrompt">Polish Prompt（帮我优化）</label>
+            <label for="polishPrompt">润色 Prompt</label>
             <textarea id="polishPrompt" name="polishPrompt"></textarea>
-            <div class="hint">输入框已有内容时使用：润色当前草稿。留空则回退到上面的 System Prompt。</div>
+            <div class="hint">输入框已有草稿、左键 ✦ 时使用。留空则回退到回复 Prompt。</div>
           </div>
 
           <div class="field checkbox-field">

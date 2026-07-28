@@ -32,7 +32,7 @@ import {
   getSendTimestamp,
   getSnsInfo,
 } from '../core/data-extractor.js';
-import { sendReply, fillSendInput, clickSendButton } from '../core/composer.js';
+import { sendReply, fillSendInput, fillSendInputAsync, clickSendButton, normalizeComposerText } from '../core/composer.js';
 import {
   SCROLLER_SELECTORS,
   COMPOSE_BOX_SELECTORS,
@@ -491,8 +491,56 @@ async function handleSendReply(value) {
   return sendReply(value?.text || '');
 }
 
-function handleFillInput(value) {
-  return fillSendInput(value?.text || '', value?.replace ?? false);
+async function handleFillInput(value) {
+  const text = value?.text || '';
+  const replace = value?.replace ?? false;
+  // 优先 async（WPP ComposeBoxActions.setTextContent）
+  // 失败时禁止无脑再跑同步 fill：async 可能已写入成功但校验误判，
+  // 第二次 fill 会变成追加 → 典型 text+text 叠字。
+  try {
+    const ok = await fillSendInputAsync(text, replace);
+    if (ok) return true;
+  } catch (e) {
+    console.warn('[inject] fillSendInputAsync failed:', e?.message || e);
+  }
+
+  // 给 Lexical 一点时间落盘后再读
+  await new Promise((r) => setTimeout(r, 50));
+  let cur = '';
+  try {
+    cur = normalizeComposerText(readComposerText() || '');
+  } catch {
+    cur = '';
+  }
+  const want = normalizeComposerText(text || '');
+
+  if (replace && want && cur === want) {
+    console.log('[inject] skip sync fallback, composer already matches after async');
+    return true;
+  }
+  if (replace && want && cur === want + want) {
+    // 已叠字：只让 sync 路径做一次去重（composer 内会识别 doubled）
+    console.warn('[inject] doubled after async, sync dedupe once');
+    return fillSendInput(text, true);
+  }
+
+  // async 完全没动到内容时，才允许同步兜底一次
+  if (replace && want && cur && cur !== want && !cur.startsWith(want)) {
+    return fillSendInput(text, replace);
+  }
+  if (replace && want && !cur) {
+    return fillSendInput(text, replace);
+  }
+  if (!replace) {
+    return fillSendInput(text, replace);
+  }
+
+  console.warn('[inject] skip sync fallback to avoid double insert', {
+    wantChars: want.length,
+    curChars: cur.length,
+    curPreview: cur.slice(0, 60),
+  });
+  return cur === want;
 }
 
 function handleClickSend() {

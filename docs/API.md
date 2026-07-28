@@ -1,6 +1,8 @@
 # Runtime API
 
-本项目是 Chromium Manifest V3 浏览器扩展。构建并加载扩展后，SDK 会在 WhatsApp Web 页面中提供 `window.WhatsappAI`。
+本项目是 Chromium Manifest V3 **浏览器扩展**。构建并加载扩展后，会在 WhatsApp Web 页面中提供 `window.WhatsappAI`（页面可见 API，不是 npm 包导出）。
+
+相关文档：[架构](./ARCHITECTURE.md) · [威胁模型](./THREAT_MODEL.md) · [兼容性](./COMPATIBILITY.md)
 
 > `window.WhatsappAI` 是页面可见的运行时 API。页面内其他脚本理论上也可以调用它，因此不要把它当作带鉴权的私有接口。
 
@@ -73,7 +75,21 @@ RPC 默认会在约 15 秒后超时；WPP 初始化可能需要更久。WhatsApp
 
 ## 配置
 
-扩展选项页支持：
+### 如何打开设置
+
+1. **推荐**：WhatsApp Web 输入框旁的 ✦ 图标上 **右键**（触控可长按）→ 页内右侧设置抽屉
+2. 配置类错误 toast 上的「打开设置」按钮（同样打开页内抽屉）
+3. 扩展管理页 → 本扩展 →「扩展选项」（独立 `options.html`，完整表单备用）
+
+页内抽屉与 `options.html` 读写同一套 `chrome.storage.local` 配置。
+
+AI 入口行为：
+
+- 输入框为空：左键 = 生成回复（ask）
+- 输入框有草稿：左键 = 润色（polish）
+- 任意模式：右键 / 长按 = 打开设置
+
+配置项支持：
 
 | Provider | 说明 | Base URL | 其他 |
 | --- | --- | --- | --- |

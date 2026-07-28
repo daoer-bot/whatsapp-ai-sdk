@@ -8,8 +8,9 @@
  *   - SDK 暴露在 isolated world 的 window.WhatsappAI（供 content script 自身的 UI 使用）
  *
  * 交互：
- *   - 输入框为空：按钮显示「帮我回复」，点击后根据聊天历史生成回复
- *   - 输入框已有内容：按钮显示「帮我优化」，点击后润色草稿并回填
+ *   - 输入框旁极简 ✦ 图标（跟 WhatsApp 工具栏同调）
+ *   - 输入框为空：左键生成回复；有草稿：左键润色
+ *   - 右键 / 长按：打开页内设置抽屉（不跳 chrome-extension 整页）
  */
 
 import { createRpc } from '../core/rpc.js';
@@ -20,6 +21,7 @@ import { debugLog, setDebugEnabled } from '../core/logger.js';
 import { readComposerText } from '../core/selectors.js';
 import { createAiButton } from './ai-button.js';
 import { showAiExplainPanel, hideAiExplainPanel, reanchorAiExplainPanel, getAiExplainPanelChatId } from './ai-panel.js';
+import { openSettingsDrawer } from './settings-drawer.js';
 import { showErrorToast, showToast, hideToast } from './toast.js';
 
 // ---- 1) 注入 page 上下文脚本 ----
@@ -173,6 +175,36 @@ async function getAiConfig() {
   return loadAiConfig();
 }
 
+/**
+ * 打开 AI 设置。
+ * 默认页内右侧抽屉，不跳 chrome-extension:// 整页；
+ * 仅在抽屉异常时回退到扩展选项页。
+ */
+function openAiSettings() {
+  try {
+    if (!isExtensionContextValid()) {
+      showErrorToast('扩展上下文已失效，请刷新 WhatsApp 页面后重试');
+      return;
+    }
+    openSettingsDrawer().catch((error) => {
+      console.warn('[AI] settings drawer failed, fallback to options page:', error);
+      try {
+        if (typeof chrome.runtime.openOptionsPage === 'function') {
+          chrome.runtime.openOptionsPage();
+          return;
+        }
+        window.open(chrome.runtime.getURL('options.html'), '_blank', 'noopener,noreferrer');
+      } catch (fallbackError) {
+        console.warn('[AI] openAiSettings fallback failed:', fallbackError);
+        showErrorToast('无法打开设置，请刷新页面后重试');
+      }
+    });
+  } catch (error) {
+    console.warn('[AI] openAiSettings failed:', error);
+    showErrorToast('无法打开设置，请刷新页面后重试');
+  }
+}
+
 function hasComposerDraft() {
   return !!readComposerText();
 }
@@ -187,6 +219,7 @@ let generateSeq = 0;
 function ensureAiButton() {
   if (aiButton) return aiButton;
   aiButton = createAiButton({
+    onOpenSettings: openAiSettings,
     onTrigger: async (mode) => {
       debugLog('[AI] onTrigger called, mode=', mode, 'isGenerating=', isGenerating);
       if (isGenerating) {
@@ -211,9 +244,10 @@ function ensureAiButton() {
 }
 
 /**
- * 根据输入框内容同步按钮文案：
- * - 有内容 → 帮我优化
- * - 无内容 → 帮我回复
+ * 根据输入框内容同步按钮模式：
+ * - 有内容 → polish（润色）
+ * - 无内容 → ask（回复）
+ * 文案只在 tooltip/aria 中体现，界面保持单图标。
  */
 function syncButtonModeFromInput() {
   if (!aiButton) return;
@@ -221,18 +255,26 @@ function syncButtonModeFromInput() {
   aiButton.setMode(mode);
 }
 
+function isAiConfigError(error) {
+  const msg = String(error?.message || error || '');
+  return /apiKey|api key|baseUrl|Dify baseUrl|OpenAI baseUrl|required|Unsupported AI provider|配置无效/i.test(msg);
+}
+
 function friendlyAiError(error) {
   const msg = String(error?.message || error || '');
   if (!msg) return 'AI 生成失败，请稍后重试';
   if (/apiKey|api key|required/i.test(msg)) return 'AI 配置无效：请检查 API Key';
-  if (/baseUrl|Dify baseUrl/i.test(msg)) return 'AI 配置无效：请检查 Dify URL';
+  if (/OpenAI baseUrl|baseUrl is required/i.test(msg)) return 'AI 配置无效：请检查 API Base URL';
+  if (/Dify baseUrl|baseUrl/i.test(msg)) return 'AI 配置无效：请检查 API Base URL';
   if (/timeout|RPC/i.test(msg)) return '读取聊天数据超时，请稍后重试';
-  if (/Failed to fetch|NetworkError|network/i.test(msg)) return '网络请求失败，请检查 Dify 服务';
-  if (/Dify request failed:\s*(\d+)/i.test(msg)) {
-    const code = msg.match(/Dify request failed:\s*(\d+)/i)[1];
-    return `Dify 请求失败（${code}）`;
+  if (/Failed to fetch|NetworkError|network|CORS|cors/i.test(msg)) {
+    return '网络请求失败：请检查 endpoint、CORS 或改用允许 web.whatsapp.com 的代理';
   }
-  if (/Unsupported AI provider/i.test(msg)) return '不支持的 AI Provider';
+  if (/(Dify|OpenAI) request failed:\s*(\d+)/i.test(msg)) {
+    const matched = msg.match(/(Dify|OpenAI) request failed:\s*(\d+)/i);
+    return `${matched[1]} 请求失败（${matched[2]}）`;
+  }
+  if (/Unsupported AI provider/i.test(msg)) return '不支持的 AI Provider，请到设置页更换';
   // 截断过长原始错误
   return msg.length > 120 ? `AI 生成失败：${msg.slice(0, 120)}…` : `AI 生成失败：${msg}`;
 }
@@ -344,7 +386,9 @@ async function generateAndFill(mode = 'ask') {
     debugLog('[AI] calling streamReply...');
     const genStartedAt = Date.now();
 
-    // 默认 blocking：等完整 JSON 一次返回；stream=true 时才尝试边到边填
+    // 默认 blocking：只在最终回填一次，避免 onChunk + final 双写叠字。
+    // 仅 config.stream===true 且非 polish 时才允许流式预填。
+    const allowStreamPrefill = aiConfig?.stream === true && effectiveMode !== 'polish';
     let streamedSuggestion = '';
     let filledOnce = false;
 
@@ -356,6 +400,7 @@ async function generateAndFill(mode = 'ask') {
       mode: effectiveMode,
       draft,
       onChunk: async (_delta, fullText) => {
+        if (!allowStreamPrefill) return;
         if (seq !== generateSeq) return;
         if (requestChatId && currentChatId && requestChatId !== currentChatId) return;
 
@@ -367,10 +412,11 @@ async function generateAndFill(mode = 'ask') {
         if (peek === streamedSuggestion) return;
         streamedSuggestion = peek;
         try {
-          await SDK.fillInput(peek, true);
-          filledOnce = true;
+          const ok = await SDK.fillInput(peek, true);
+          if (ok) filledOnce = true;
+          debugLog('[AI] onChunk stream prefill ok=', ok, 'chars=', peek.length);
         } catch {
-          // ignore partial fill errors
+          // ignore partial fill errors — 最终回填会处理
         }
       },
     });
@@ -394,18 +440,121 @@ async function generateAndFill(mode = 'ask') {
 
     const suggestion = (parsed.suggestion || '').trim();
     debugLog('[AI] suggestion:', suggestion.slice(0, 80));
+    debugLog('[AI] fill state:', {
+      filledOnce,
+      streamedChars: streamedSuggestion.length,
+      allowStreamPrefill,
+      mode: effectiveMode,
+    });
     debugLog('[AI] meta:', {
       summary: (parsed.summary || '').slice(0, 40),
       explanation: (parsed.explanation || '').slice(0, 40),
       translation: (parsed.translation || '').slice(0, 40),
     });
 
-    // 最终回填
+    // 最终回填：整次生成以「替换」写入；已是目标文案则跳过。
+    // 润色场景输入框里本来就有草稿，旧实现 clear 失败会直接放弃写入，
+    // 表现为「浮窗更新了、输入框还是原稿」。
     const tFill = Date.now();
-    if (suggestion && suggestion !== streamedSuggestion) {
-      await SDK.fillInput(suggestion, true);
-    } else if (suggestion && !filledOnce) {
-      await SDK.fillInput(suggestion, true);
+    let fillMatched = false;
+    if (suggestion) {
+      const normalizeLocal = (s) => String(s || '')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/\u00A0/g, ' ')
+        .replace(/\r\n/g, '\n')
+        .trim();
+      const want = normalizeLocal(suggestion);
+      const draftNorm = normalizeLocal(draft);
+
+      let after = '';
+      try {
+        after = normalizeLocal(await SDK.getInputContent());
+      } catch {
+        after = '';
+      }
+
+      // 润色时：即便 suggestion 与当前框「看起来像」，只要和点击瞬间草稿不同，也强制写一次
+      // （避免 mock/模型微调后 alreadyGood 误判，或 DOM 读到陈旧值）
+      const alreadyGood = after === want;
+      const mustForcePolishWrite = effectiveMode === 'polish'
+        && !!want
+        && draftNorm
+        && after === draftNorm
+        && want !== draftNorm;
+
+      debugLog('[AI] composer before final fill', {
+        alreadyGood,
+        mustForcePolishWrite,
+        mode: effectiveMode,
+        afterChars: after.length,
+        suggestionChars: want.length,
+        draftChars: draftNorm.length,
+      });
+
+      const isDoubled = (cur, target) => {
+        if (!target || !cur) return false;
+        if (cur === target + target) return true;
+        if (cur === target + '\n' + target) return true;
+        if (cur.length >= target.length * 2 && cur.startsWith(target) && cur.endsWith(target)) {
+          return cur.slice(target.length, cur.length - target.length).trim() === '';
+        }
+        return false;
+      };
+
+      const readAfter = async () => {
+        await new Promise((r) => setTimeout(r, 80));
+        try {
+          return normalizeLocal(await SDK.getInputContent());
+        } catch {
+          return '';
+        }
+      };
+
+      // 铁律：正常只 fill 一次。禁止 clear + rewrite 两次外部写入（会叠成 text+text）。
+      if (alreadyGood) {
+        fillMatched = true;
+        debugLog('[AI] skip final fill, composer already matches');
+      } else if (isDoubled(after, want)) {
+        debugLog('[AI] composer already doubled, dedupe once');
+        await SDK.fillInput(suggestion, true);
+        after = await readAfter();
+        fillMatched = after === want;
+      } else {
+        const ok = await SDK.fillInput(suggestion, true);
+        after = await readAfter();
+        fillMatched = after === want;
+        debugLog('[AI] single fill result', {
+          ok,
+          match: fillMatched,
+          doubled: isDoubled(after, want),
+          chars: after.length,
+        });
+
+        // 仅叠字时允许第二次 fill（去重，不是再追加一条路径）
+        if (!fillMatched && isDoubled(after, want)) {
+          debugLog('[AI] doubled after single fill, dedupe once');
+          await SDK.fillInput(suggestion, true);
+          after = await readAfter();
+          fillMatched = after === want;
+        }
+
+        // 润色仍等于原稿：再 replace 一次（仍禁止 clear+write）
+        if (!fillMatched && mustForcePolishWrite && after === draftNorm) {
+          debugLog('[AI] polish still equals draft, one more replace');
+          await SDK.fillInput(suggestion, true);
+          after = await readAfter();
+          fillMatched = after === want;
+        }
+      }
+
+      if (suggestion && !fillMatched) {
+        console.warn('[AI] composer fill did not stick', {
+          mode: effectiveMode,
+          wantPreview: want.slice(0, 60),
+          afterPreview: after.slice(0, 60),
+          doubled: isDoubled(after, want),
+        });
+      }
     }
     timing.fillMs = Date.now() - tFill;
 
@@ -430,6 +579,12 @@ async function generateAndFill(mode = 'ask') {
     hideToast();
     if (!suggestion) {
       showToast('AI 未返回可用话术，请重试');
+    } else if (!fillMatched) {
+      showErrorToast(
+        effectiveMode === 'polish'
+          ? '润色结果已生成，但未能替换输入框内容，请重试'
+          : 'AI 已生成，但未能写入输入框，请重试',
+      );
     }
 
     debugLog('[AI] fillInput + panel done');
@@ -440,7 +595,15 @@ async function generateAndFill(mode = 'ask') {
       totalMs: Date.now() - totalStartedAt,
     });
     hideToast();
-    showErrorToast(friendlyAiError(error));
+    const tip = friendlyAiError(error);
+    if (isAiConfigError(error)) {
+      showErrorToast(tip, {
+        actionLabel: '打开设置',
+        onAction: openAiSettings,
+      });
+    } else {
+      showErrorToast(tip);
+    }
     hideAiExplainPanel();
   }
 }

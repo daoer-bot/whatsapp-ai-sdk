@@ -99,6 +99,9 @@ try {
     'includeMedia',
     'chat/completions',
     'Unsupported AI provider',
+    'waai-settings-root',
+    'openSettingsDrawer',
+    'AI 润色',
   ]) {
     if (content.includes(marker)) ok(`content.js has "${marker}"`);
     else fail(`content.js missing marker: ${marker}`);
@@ -131,14 +134,83 @@ try {
   } else {
     fail('README missing explicit root-vs-dist load guidance');
   }
+  if (/浏览器扩展/.test(readme) && /npm runtime/.test(readme)) {
+    ok('README states extension (not npm runtime) positioning');
+  } else {
+    fail('README missing extension-vs-npm positioning');
+  }
+  if (/THREAT_MODEL|威胁模型/.test(readme) && /SELECTOR_CHECKLIST|回归清单/.test(readme)) {
+    ok('README links threat model and selector checklist');
+  } else {
+    fail('README missing threat model / selector checklist links');
+  }
 } catch (e) {
   fail(`README check: ${e.message}`);
+}
+
+console.log('[smoke] checking portfolio docs presence...');
+for (const rel of [
+  'README.en.md',
+  'docs/THREAT_MODEL.md',
+  'docs/SELECTOR_CHECKLIST.md',
+  'docs/assets/README.md',
+  'test/rpc.test.mjs',
+  'test/prompt-builder.test.mjs',
+  'test/message-types.test.mjs',
+]) {
+  const abs = join(projectRoot, rel);
+  if (existsSync(abs) && statSync(abs).size > 0) ok(`present: ${rel}`);
+  else fail(`missing portfolio/doc/test file: ${rel}`);
+}
+
+console.log('[smoke] checking composer anti-duplication markers...');
+try {
+  const composer = readFileSync(join(projectRoot, 'src/core/composer.js'), 'utf8');
+  for (const marker of [
+    'fillSendInputAsync',
+    'ComposeBoxActions',
+    'setTextContent',
+    'clearComposer',
+    'skip, already same',
+    'select-replace',
+    'fillViaSelectReplace',
+    'isExactDouble',
+    'insertOnceSafe',
+  ]) {
+    if (composer.includes(marker)) ok(`composer.js has "${marker}"`);
+    else fail(`composer.js missing marker: ${marker}`);
+  }
+  const injectSrc = readFileSync(join(projectRoot, 'src/inject/inject.js'), 'utf8');
+  if (injectSrc.includes('fillSendInputAsync')) ok('inject.js uses fillSendInputAsync');
+  else fail('inject.js missing fillSendInputAsync');
+  if (injectSrc.includes('skip sync fallback')) ok('inject.js guards sync fallback after async');
+  else fail('inject.js missing sync fallback guard');
+  const content = readFileSync(join(projectRoot, 'src/content/content.js'), 'utf8');
+  if (content.includes('allowStreamPrefill')) ok('content.js gates stream prefill');
+  else fail('content.js missing allowStreamPrefill gate');
+  if (content.includes('single fill result') || content.includes('skip final fill')) {
+    ok('content.js uses single-fill final path');
+  } else {
+    fail('content.js missing single-fill final path');
+  }
+  if (content.includes('isDoubled') || content.includes('dedupe once')) {
+    ok('content.js detects doubled composer text');
+  } else {
+    fail('content.js missing doubled-text guard');
+  }
+  if (content.includes("fillInput('', true)") || content.includes('clear+rewrite once')) {
+    fail('content.js still has clear+rewrite double-write path');
+  } else {
+    ok('content.js removed clear+rewrite double-write');
+  }
+} catch (e) {
+  fail(`composer anti-duplication check: ${e.message}`);
 }
 
 console.log('[smoke] checking dist/inject.js markers...');
 try {
   const inject = readFileSync(join(projectRoot, 'dist/inject.js'), 'utf8');
-  for (const marker of ['GET_MESSAGES', 'ensureWppReady', 'includeMedia']) {
+  for (const marker of ['GET_MESSAGES', 'ensureWppReady', 'includeMedia', 'fillSendInputAsync']) {
     if (inject.includes(marker)) ok(`inject.js has "${marker}"`);
     else fail(`inject.js missing marker: ${marker}`);
   }
