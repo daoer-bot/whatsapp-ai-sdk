@@ -217,6 +217,10 @@ try {
     'AI 解释',
     'queryComposerRect',
     'z-index: 2147483000',
+    'selectionLock',
+    'isSelectionInsidePanel',
+    'data-waai="copy"',
+    'min(340px',
   ]) {
     if (panel.includes(marker)) ok(`ai-panel.js has "${marker}"`);
     else fail(`ai-panel.js missing marker: ${marker}`);
