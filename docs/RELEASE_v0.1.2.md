@@ -11,8 +11,8 @@ Date: 2026-07-28
 - **OpenAI-compatible provider** + mock / dify; default remains **mock** (no network)
 - **In-page settings drawer** (right-click / long-press ✦)
 - **Composer anti-duplication** fixes (Lexical double-insert / polish not updating input)
-- **Docs for portfolio & safety**: EN README, threat model, selector regression checklist
-- **Demo video**: [`docs/assets/demo-usage.mp4`](./assets/demo-usage.mp4) (~38s) + still frames
+- **Docs**: EN README, threat model, selector regression checklist
+- **Demo**: generate / polish GIFs under `docs/assets/`
 - **Tests**: 30 pure-logic unit tests (ai-client, rpc, prompt-builder, message-types)
 
 ## Install (developers)
@@ -53,13 +53,6 @@ npm run verify
 - API keys in `chrome.storage.local` unencrypted
 - `window.WhatsappAI` is page-visible (not an authenticated private API)
 - WhatsApp Web / WPP DOM can break without notice
-
-## GitHub Release checklist (manual)
-
-- [ ] Push `main` and tag `v0.1.2`
-- [ ] Create GitHub Release from this file’s Highlights + Install sections
-- [ ] Set repository Description + Topics (`chrome-extension`, `manifest-v3`, `whatsapp-web`, …)
-- [ ] Optional: add screenshots under `docs/assets/` (no real chats / keys)
 
 ## Verify
 

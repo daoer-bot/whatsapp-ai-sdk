@@ -4,7 +4,7 @@
 
 面向 Chromium **Manifest V3** 的**非官方** WhatsApp Web **浏览器扩展**源码：读取当前会话与消息、监听更新、写入输入框，并可选接入 AI 辅助回复。
 
-> **定位说明**：这是**扩展工程**，不是开箱即用的 npm runtime 包。构建后在浏览器中加载**仓库根目录**（含 `manifest.json`）。页面侧调试/二次开发 API 为 `window.WhatsappAI`（名称沿用历史，实为扩展注入的页面 API）。
+> **定位说明**：这是**扩展工程**，不是开箱即用的 npm runtime 包。构建后在浏览器中加载**仓库根目录**（含 `manifest.json`）。页面 API：`window.WhatsappAI`。
 
 > 免责声明：本项目不是 WhatsApp、Meta 或 WPPConnect 官方项目。请自行确认使用方式符合 WhatsApp 服务条款、当地法律和所在组织的合规要求。
 
@@ -23,17 +23,11 @@
 | Lexical 输入框易叠字 | 单次写入、可用时走 WPP `setTextContent`、回填校验 |
 | AI 默认不外泄聊天 | 默认 **`mock`**，不内置 key / 远程地址 |
 
-### 架构（SVG）
+### 架构
 
 ![Architecture](docs/assets/architecture.svg)
 
-### UI 示意（SVG，非官方视觉）
-
-![UI mock](docs/assets/ui-mock.svg)
-
 ## 演示
-
-真机 GIF（GitHub 上**自动循环播放**，不用下载；演示会话，非真实客户）。
 
 ### 生成回复（输入框为空 → 点 ✦）
 
@@ -42,12 +36,6 @@
 ### 润色草稿（输入框有内容 → 点 ✦）
 
 ![润色草稿演示](docs/assets/demo-polish.gif)
-
-| 真机截图：AI 入口 | 真机截图：解释面板 |
-| --- | --- |
-| ![AI 入口](docs/assets/hero-ai-button.jpg) | ![解释面板](docs/assets/demo-frame-mid.jpg) |
-
-原片 MP4（可选）：[demo-usage.mp4](docs/assets/demo-usage.mp4)。更多资源见 [`docs/assets/`](docs/assets/README.md)。
 
 ## 能力概览
 
@@ -59,7 +47,7 @@
   - `mock`：本地演示，不发网络请求（**默认**）
   - `dify`：Dify Chat Messages API
   - `openai`：OpenAI 兼容 Chat Completions（含多数中转/网关）
-  - **输出模式** `outputMode`：`text`（默认，只写输入框）/ `structured`（JSON + 解释面板）；人设 Prompt 可随便改，契约由代码追加
+  - **输出模式** `outputMode`：`text`（默认，只写输入框）/ `structured`（JSON + 解释面板）
 - 类型声明：[types/whatsapp-ai-sdk.d.ts](types/whatsapp-ai-sdk.d.ts)
 - 文档：[API](docs/API.md) · [架构](docs/ARCHITECTURE.md) · [兼容性](docs/COMPATIBILITY.md) · [威胁模型](docs/THREAT_MODEL.md) · [选择器回归清单](docs/SELECTOR_CHECKLIST.md)
 
@@ -82,11 +70,10 @@ npm run verify
 
 ### 在 Chrome / Edge 中加载
 
-> **重要**：请加载**仓库根目录**（包含 `manifest.json` 和 `options.html` 的目录），**不要**只选择 `dist/`。  
-> 加载的是仓库根目录，**不是 `dist/`**。`manifest.json` 会引用 `dist/content.js`、`dist/inject.js` 等构建产物。
+> **重要**：加载**仓库根目录**（含 `manifest.json`），**不要**只选 `dist/`。`manifest.json` 会引用 `dist/` 下的构建产物。
 
 1. 根目录执行 `npm run build`（或 `npm run verify`）。
-2. 打开 `chrome://extensions/` → 开发者模式 →「加载已解压的扩展程序」→ 选择本项目的**根目录**（不是 `dist/`）。
+2. 打开 `chrome://extensions/` → 开发者模式 →「加载已解压的扩展程序」→ 选择本项目**根目录**。
 3. 打开 [WhatsApp Web](https://web.whatsapp.com) 并完成登录。
 4. 保持默认 `mock`，在输入框旁点 **✦**（空输入=回复，有草稿=润色）。
 5. **右键**（或长按）✦ 打开页内设置抽屉（与 `options.html` 共用 `chrome.storage.local`）。
@@ -161,7 +148,7 @@ CI 在 push / PR 时跑构建、测试、敏感信息扫描与依赖审计。
 - [x] 页内设置抽屉 + 威胁模型 / 选择器回归文档
 - [x] 纯逻辑单测扩展（RPC、prompt、message-types）
 - [ ] Service Worker 代理 AI 请求，降低 CORS 摩擦
-- [ ] 选项页暴露 stream 开关（storage 已可写）
+- [ ] 选项页暴露 stream 开关
 - [ ] GitHub Release 附带构建说明 / 可选产物说明
 
 ## 贡献
@@ -171,8 +158,3 @@ CI 在 push / PR 时跑构建、测试、敏感信息扫描与依赖审计。
 ## 许可证
 
 MIT，见 [LICENSE](LICENSE)。第三方声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-
----
-
-**仓库 GitHub Topics 建议**（在仓库 Settings → Topics 填写，需你在网页操作）：  
-`chrome-extension` · `manifest-v3` · `whatsapp-web` · `browser-extension` · `ai-assistant` · `wppconnect`

@@ -23,17 +23,11 @@ Unofficial **Chromium Manifest V3 browser extension** for WhatsApp Web: read the
 | Lexical composer easily double-inserts text | Single-write path, WPP `setTextContent` when available, verification |
 | Shipping AI without leaking chats by default | Default **`mock`** provider; no bundled keys or remote endpoints |
 
-### Architecture (SVG)
+### Architecture
 
 ![Architecture](docs/assets/architecture.svg)
 
-### UI mock (SVG, not official branding)
-
-![UI mock](docs/assets/ui-mock.svg)
-
 ## Demo
-
-Real walkthrough as **autoplaying GIFs** on GitHub (no download; demo chat, not a real customer).
 
 ### Generate reply (empty composer → ✦)
 
@@ -42,12 +36,6 @@ Real walkthrough as **autoplaying GIFs** on GitHub (no download; demo chat, not 
 ### Polish draft (composer has text → ✦)
 
 ![Polish draft demo](docs/assets/demo-polish.gif)
-
-| Live still: AI entry | Live still: explain panel |
-| --- | --- |
-| ![AI entry](docs/assets/hero-ai-button.jpg) | ![Explain panel](docs/assets/demo-frame-mid.jpg) |
-
-Optional source MP4: [demo-usage.mp4](docs/assets/demo-usage.mp4). More assets: [`docs/assets/`](docs/assets/README.md).
 
 ## Features
 
@@ -59,7 +47,7 @@ Optional source MP4: [demo-usage.mp4](docs/assets/demo-usage.mp4). More assets: 
   - `mock` — local demo, no network (default)
   - `dify` — Dify Chat Messages API
   - `openai` — OpenAI-compatible Chat Completions (including many gateways)
-  - **`outputMode`**: `text` (default, fill composer only) / `structured` (JSON + explain panel); persona prompts stay free-form, serialization contract is appended by code
+  - **`outputMode`**: `text` (default, fill composer only) / `structured` (JSON + explain panel)
 
 - Types: [`types/whatsapp-ai-sdk.d.ts`](types/whatsapp-ai-sdk.d.ts)
 - Docs: [API](docs/API.md) · [Architecture](docs/ARCHITECTURE.md) · [Compatibility](docs/COMPATIBILITY.md) · [Threat model](docs/THREAT_MODEL.md) · [Selector checklist](docs/SELECTOR_CHECKLIST.md)

@@ -1,64 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" role="img" aria-labelledby="title desc">
-  <title id="title">WhatsApp AI Extension architecture</title>
-  <desc id="desc">Isolated world content script talks to page world inject and WPP over postMessage RPC, with WPP React DOM fallback and optional AI providers.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" viewBox="0 0 880 300" role="img" aria-labelledby="title desc">
+  <title id="title">Architecture</title>
+  <desc id="desc">content.js in isolated world talks to inject.js in page world over postMessage RPC.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="100%" stop-color="#1e293b"/>
-    </linearGradient>
-    <linearGradient id="cardA" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1d4ed8"/>
-      <stop offset="100%" stop-color="#1e3a8a"/>
-    </linearGradient>
-    <linearGradient id="cardB" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0f766e"/>
-      <stop offset="100%" stop-color="#115e59"/>
-    </linearGradient>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#64748b"/>
     </marker>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.35"/>
-    </filter>
   </defs>
 
-  <rect width="960" height="420" rx="20" fill="url(#bg)"/>
-  <rect x="24" y="24" width="912" height="372" rx="16" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <rect width="880" height="300" rx="14" fill="#0b1220"/>
 
-  <text x="48" y="58" fill="#e2e8f0" font-family="Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700">WhatsApp Web tab</text>
-  <text x="48" y="82" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="13">Manifest V3 extension · minimal permissions · default mock AI</text>
+  <!-- left -->
+  <rect x="36" y="36" width="320" height="228" rx="12" fill="#111827" stroke="#1e293b" stroke-width="1"/>
+  <circle cx="64" cy="68" r="6" fill="#3b82f6"/>
+  <text x="80" y="74" fill="#93c5fd" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Isolated world</text>
+  <text x="56" y="120" fill="#f8fafc" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700">content.js</text>
+  <text x="56" y="158" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="15">✦ UI / settings / panel</text>
+  <text x="56" y="190" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="15">AI · mock · dify · openai</text>
+  <text x="56" y="222" fill="#64748b" font-family="ui-monospace, Consolas, monospace" font-size="13">chrome.storage · fetch</text>
 
-  <!-- Isolated world -->
-  <g filter="url(#shadow)">
-    <rect x="48" y="110" width="360" height="240" rx="14" fill="url(#cardA)"/>
-  </g>
-  <text x="68" y="142" fill="#bfdbfe" font-family="Segoe UI, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.04em">ISOLATED WORLD</text>
-  <text x="68" y="168" fill="#eff6ff" font-family="Segoe UI, system-ui, sans-serif" font-size="18" font-weight="700">content.js</text>
-  <text x="68" y="194" fill="#dbeafe" font-family="Segoe UI, system-ui, sans-serif" font-size="13">✦ entry · settings drawer</text>
-  <text x="68" y="216" fill="#dbeafe" font-family="Segoe UI, system-ui, sans-serif" font-size="13">toast / explain panel</text>
-  <rect x="68" y="236" width="320" height="88" rx="10" fill="#172554" fill-opacity="0.55"/>
-  <text x="84" y="264" fill="#93c5fd" font-family="Segoe UI, system-ui, sans-serif" font-size="12">AI providers</text>
-  <text x="84" y="288" fill="#e2e8f0" font-family="ui-monospace, Consolas, monospace" font-size="13">mock · dify · openai</text>
-  <text x="84" y="310" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">chrome.storage.local · CORS-aware fetch</text>
+  <!-- right -->
+  <rect x="524" y="36" width="320" height="228" rx="12" fill="#111827" stroke="#1e293b" stroke-width="1"/>
+  <circle cx="552" cy="68" r="6" fill="#14b8a6"/>
+  <text x="568" y="74" fill="#5eead4" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="600">Page world</text>
+  <text x="544" y="120" fill="#f8fafc" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700">inject.js</text>
+  <text x="544" y="158" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="15">window.WhatsappAI</text>
+  <text x="544" y="190" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="15">chat · composer · send</text>
+  <text x="544" y="222" fill="#64748b" font-family="ui-monospace, Consolas, monospace" font-size="13">WPP → React → DOM</text>
 
-  <!-- Page world -->
-  <g filter="url(#shadow)">
-    <rect x="552" y="110" width="360" height="240" rx="14" fill="url(#cardB)"/>
-  </g>
-  <text x="572" y="142" fill="#99f6e4" font-family="Segoe UI, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.04em">PAGE WORLD</text>
-  <text x="572" y="168" fill="#ecfdf5" font-family="Segoe UI, system-ui, sans-serif" font-size="18" font-weight="700">inject.js + wpp.js</text>
-  <text x="572" y="194" fill="#ccfbf1" font-family="Segoe UI, system-ui, sans-serif" font-size="13">window.WhatsappAI API</text>
-  <text x="572" y="216" fill="#ccfbf1" font-family="Segoe UI, system-ui, sans-serif" font-size="13">composer fill / send (DOM)</text>
-  <rect x="572" y="236" width="320" height="88" rx="10" fill="#042f2e" fill-opacity="0.45"/>
-  <text x="588" y="264" fill="#5eead4" font-family="Segoe UI, system-ui, sans-serif" font-size="12">Data fallback chain</text>
-  <text x="588" y="288" fill="#e2e8f0" font-family="ui-monospace, Consolas, monospace" font-size="13">WPP → React fiber → DOM</text>
-  <text x="588" y="310" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="12">read chat · messages · meId</text>
-
-  <!-- RPC bridge -->
-  <line x1="420" y1="230" x2="540" y2="230" stroke="#94a3b8" stroke-width="2.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
-  <rect x="430" y="198" width="100" height="28" rx="14" fill="#0f172a" stroke="#64748b"/>
-  <text x="480" y="217" text-anchor="middle" fill="#e2e8f0" font-family="ui-monospace, Consolas, monospace" font-size="12">postMessage</text>
-  <text x="480" y="258" text-anchor="middle" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="11">RPC · ~15s timeout</text>
-
-  <text x="48" y="380" fill="#64748b" font-family="Segoe UI, system-ui, sans-serif" font-size="12">Not official WhatsApp / Meta · load repo root (manifest.json), not dist/ only</text>
+  <!-- bridge -->
+  <line x1="368" y1="150" x2="512" y2="150" stroke="#475569" stroke-width="2" marker-start="url(#arr)" marker-end="url(#arr)"/>
+  <rect x="404" y="128" width="72" height="28" rx="8" fill="#0b1220" stroke="#334155"/>
+  <text x="440" y="147" text-anchor="middle" fill="#cbd5e1" font-family="ui-monospace, Consolas, monospace" font-size="13">RPC</text>
 </svg>

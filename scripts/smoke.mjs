@@ -148,7 +148,7 @@ try {
 console.log('[smoke] checking README load path guidance...');
 try {
   const readme = readFileSync(join(projectRoot, 'README.md'), 'utf8');
-  if (/不要.*只选择.*dist|不是 `dist\/`|不是\*\*`dist\/`\*\*/.test(readme)
+  if (/不要.*只选.*dist|不是 `dist\/`|不是\*\*`dist\/`\*\*/.test(readme)
     && /仓库根目录/.test(readme)
     && /manifest\.json/.test(readme)) {
     ok('README warns to load repo root, not dist/');
@@ -169,7 +169,7 @@ try {
   fail(`README check: ${e.message}`);
 }
 
-console.log('[smoke] checking portfolio docs presence...');
+console.log('[smoke] checking docs/assets presence...');
 for (const rel of [
   'README.en.md',
   'docs/THREAT_MODEL.md',
@@ -177,32 +177,28 @@ for (const rel of [
   'docs/assets/README.md',
   'docs/assets/hero-banner.svg',
   'docs/assets/architecture.svg',
-  'docs/assets/ui-mock.svg',
   'docs/assets/demo-generate.gif',
   'docs/assets/demo-polish.gif',
-  'docs/assets/demo-usage.mp4',
-  'docs/assets/hero-ai-button.jpg',
-  'docs/assets/demo-frame-mid.jpg',
   'test/rpc.test.mjs',
   'test/prompt-builder.test.mjs',
   'test/message-types.test.mjs',
 ]) {
   const abs = join(projectRoot, rel);
   if (existsSync(abs) && statSync(abs).size > 0) ok(`present: ${rel}`);
-  else fail(`missing portfolio/doc/test file: ${rel}`);
+  else fail(`missing doc/test file: ${rel}`);
 }
 
 try {
   const readme = readFileSync(join(projectRoot, 'README.md'), 'utf8');
   if (/demo-generate\.gif/.test(readme) && /demo-polish\.gif/.test(readme)) {
-    ok('README embeds generate/polish autoplay GIFs');
+    ok('README embeds generate/polish GIFs');
   } else {
     fail('README missing demo-generate.gif / demo-polish.gif references');
   }
-  if (/architecture\.svg/.test(readme) && /ui-mock\.svg/.test(readme) && /hero-banner\.svg/.test(readme)) {
-    ok('README embeds architecture/ui/hero SVGs');
+  if (/architecture\.svg/.test(readme) && /hero-banner\.svg/.test(readme)) {
+    ok('README embeds architecture/hero SVGs');
   } else {
-    fail('README missing SVG portfolio figures');
+    fail('README missing architecture.svg / hero-banner.svg references');
   }
 } catch (e) {
   fail(`README demo asset check: ${e.message}`);
@@ -217,10 +213,11 @@ try {
     'AI 解释',
     'queryComposerRect',
     'z-index: 2147483000',
-    'selectionLock',
     'isSelectionInsidePanel',
-    'data-waai="copy"',
-    'min(340px',
+    'installDocumentShield',
+    'stopImmediatePropagation',
+    'data-waai="copy-all"',
+    'user-select: text !important',
   ]) {
     if (panel.includes(marker)) ok(`ai-panel.js has "${marker}"`);
     else fail(`ai-panel.js missing marker: ${marker}`);
